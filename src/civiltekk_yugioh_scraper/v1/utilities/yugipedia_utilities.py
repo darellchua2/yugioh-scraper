@@ -2,7 +2,7 @@ import json
 import datetime
 import os
 
-from yugioh_scraper.v1.utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
+from ..utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
 
 from .yugipedia.yugipedia_scraper_set_v2 import get_yugioh_sets_v2
 
