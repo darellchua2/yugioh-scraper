@@ -25,11 +25,22 @@ def get_rarity_mapping_dict() -> dict:
         'GR': 'Gold Rare',
         'GSE': 'Gold Secret Rare',
         'P-HR': 'Holographic Parallel Rare',
-        'HR': 'Holographic Rare', 'KC-N': 'Kaiba Corporation Common', 'KC-R': 'Kaiba Corporation Rare',
-        'KC-UR': 'Kaiba Corporation Ultra Rare', 'M-GR': 'Millennium Gold Rare', 'M': 'Millennium Rare',
-        'M-SE': 'Millennium Secret Rare', 'M-SR': 'Millennium Super Rare', 'M-UR': 'Millennium Ultra Rare',
-        'P-N': 'Normal Parallel Rare', 'NR': 'Normal Rare', 'PG': 'Premium Gold Rare',
-        'PSE': 'Prismatic Secret Rare', 'R': 'Rare', 'P-SE': 'Secret Parallel Rare', 'SE': 'Secret Rare',
+        'HR': 'Holographic Rare',
+        'KC-N': 'Kaiba Corporation Common',
+        'KC-R': 'Kaiba Corporation Rare',
+        'KC-UR': 'Kaiba Corporation Ultra Rare',
+        'M-GR': 'Millennium Gold Rare',
+        'M': 'Millennium Rare',
+        'M-SE': 'Millennium Secret Rare',
+        'M-SR': 'Millennium Super Rare',
+        'M-UR': 'Millennium Ultra Rare',
+        'P-N': 'Normal Parallel Rare',
+        'NR': 'Normal Rare',
+        'PG': 'Premium Gold Rare',
+        'PSE': 'Prismatic Secret Rare',
+        'R': 'Rare',
+        'P-SE': 'Secret Parallel Rare',
+        'SE': 'Secret Rare',
         'P-SR': 'Super Parallel Rare',
         'SR': 'Super Rare',
         'UL': 'Ultimate Rare',
@@ -38,7 +49,8 @@ def get_rarity_mapping_dict() -> dict:
         'QCSE': 'Quarter Century Secret Rare',
         'SP': 'Super Rare',
         'ｼｰｸﾚｯﾄ': 'Secret Rare',
-        'NP': 'Normal Parallel Rare'
+        'NP': 'Normal Parallel Rare',
+        "SPECIAL RED": "Secret Rare Special Red Version"
     }
     return rarity_dict
 
@@ -92,6 +104,7 @@ def get_card_set_codes_from_card_set(obj: dict) -> list[dict]:
             # search for rarity code
             if rarity_span:
                 rarity_code = rarity_span.text
+
             card_divs = rarity_div.find_all(
                 'div', "col-md")
             for card_div in card_divs:
@@ -114,6 +127,10 @@ def get_card_set_codes_from_card_set(obj: dict) -> list[dict]:
 
                 if "（イラス" in set_card_name_jap_h4_text or "（イラ" in set_card_name_jap_h4_text or "(新規" in set_card_name_jap_h4_text or "(海外" in set_card_name_jap_h4_text:
                     set_card_code = set_card_code + "b"
+
+                # ADD FOR QCAC Check
+                if "(SPEC" in set_card_name_jap_h4_text and set_code == "QCAC":
+                    rarity_code = "SPECIAL RED"
 
                 card_obj['Price'] = jap_price
                 card_obj['card_set_card_code'] = set_card_code
@@ -163,44 +180,6 @@ def get_set_list(url: str) -> list[dict]:
 
 
 def get_set_list_v2(url: str) -> list[dict]:
-    # """
-    # Extracts a list of dictionaries containing URLs and set codes from a given URL.
-
-    # Args:
-    #     url (str): The URL to scrape.
-
-    # Returns:
-    #     list[dict]: A list of unique dictionaries with `url` and `set_code` keys.
-    # """
-    # def get_set_code(text: str) -> str:
-    #     """
-    #     Extracts a set code from the provided text.
-
-    #     Args:
-    #         text (str): The text containing the set code.
-
-    #     Returns:
-    #         str: The extracted set code or an empty string if not found.
-    #     """
-    #     # Dummy implementation; replace with actual logic for set code extraction
-    #     match = re.search(r'SET_CODE_(\w+)', text)
-    #     return match.group(1) if match else ""
-
-    # def add_additional_url(data: list[dict]) -> list[dict]:
-    #     """
-    #     Adds additional URLs to the data.
-
-    #     Args:
-    #         data (list[dict]): The initial list of dictionaries.
-
-    #     Returns:
-    #         list[dict]: The modified list of dictionaries with additional URLs.
-    #     """
-    #     # Dummy implementation; replace with actual logic for adding URLs
-    #     for item in data:
-    #         item['additional_url'] = item['url'] + "/additional"
-    #     return data
-
     dict_list = []
     try:
         response = requests.get(url)
