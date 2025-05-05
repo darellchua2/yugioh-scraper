@@ -1,6 +1,6 @@
 import json
-import datetime
 import os
+import time
 
 from ..utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
 
@@ -204,7 +204,6 @@ def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, l
     """
     all_cards: List[YugiohCard] = []
     offset = 0
-
     while True:
         print(f"Fetching data with offset {offset}...")
         data = get_card_data(
@@ -245,6 +244,7 @@ def get_yugioh_cards() -> list[YugiohCard]:
     with ThreadPoolExecutor() as executor:  # optimally defined number of threads
         futures = []
         for character in character_list:
+            time.sleep(1)
             futures.append(executor.submit(
                 get_yugioh_cards_per_semantic_card_search_per_character_v2, character))
         for future in concurrent.futures.as_completed(futures):
