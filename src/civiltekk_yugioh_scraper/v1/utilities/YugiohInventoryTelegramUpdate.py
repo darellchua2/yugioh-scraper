@@ -8,7 +8,6 @@ import pandas as pd
 import pymysql
 
 import requests
-from woocommerce import API
 
 # Used to check if data exist on before and after
 
