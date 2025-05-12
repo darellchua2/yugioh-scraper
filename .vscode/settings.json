@@ -1,0 +1,12 @@
+{
+  "python.analysis.typeCheckingMode": "basic",
+  "terminal.integrated.env.linux": {
+    "AWS_PROFILE": "silentx"
+  },
+  "terminal.integrated.env.osx": {
+    "AWS_PROFILE": "silentx"
+  },
+  "terminal.integrated.env.windows": {
+    "AWS_PROFILE": "silentx"
+  }
+}

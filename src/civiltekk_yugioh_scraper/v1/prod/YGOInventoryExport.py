@@ -131,6 +131,7 @@ def retrieve_website_data() -> pd.DataFrame:
         df = df[cols]
         df['duplicated'] = df.duplicated(
             subset=['set_card_code_updated', 'set_name', 'rarity_name'], keep='last')
+        df['region'] = "Japanese"
 
         end = datetime.datetime.now()
         logging.info(f"Data retrieval time: {end - start}")

@@ -3,3 +3,4 @@ dist/
 .pytest*/
 myvenv*/
 **/*.egg-info
+.env
