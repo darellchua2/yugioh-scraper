@@ -11,9 +11,8 @@ import concurrent.futures
 import csv
 
 from .tcgcorner_scraper import get_card_prices
-from ..utilities.aws_utilities import retrieve_data_from_db_to_df
+from ..utilities.aws_utilities import retrieve_data_from_db_to_df, get_engine_for_tekkx_scalable_db
 from ..utilities.misc_utilities import get_file_path, split
-
 """   LOAD ENV VARIABLES START   """
 RDS_HOST = os.getenv('RDS_HOST')
 NAME = os.getenv('user')
@@ -33,36 +32,6 @@ HEADERS = {
 }
 TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
 ### STATIC VARIABLES END ###
-
-
-def get_engine_for_tekkx_scalable_db(db_name: str = DB_NAME):
-    """
-    Creates and returns a SQLAlchemy engine for connecting to the MySQL database.
-
-    Args:
-        db_name (str): The name of the database to connect to.
-
-    Returns:
-        tuple: A logger instance and a SQLAlchemy engine.
-
-    Raises:
-        pymysql.MySQLError: If connection to the database fails.
-    """
-    db_uri = f"mysql+pymysql://{NAME}:{PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}"
-    print("db_uri:", db_uri)
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
-    try:
-        engine = create_engine(db_uri, echo=True)
-        logger.info("SUCCESS: Connection to RDS MySQL instance succeeded")
-    except pymysql.MySQLError as e:
-        logger.error(
-            "ERROR: Unexpected error: Could not connect to MySQL instance.")
-        logger.error(e)
-        sys.exit()
-
-    return logger, engine
 
 
 def create_overall_card_code_list() -> pd.DataFrame:

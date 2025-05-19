@@ -203,7 +203,7 @@ def process_redirections(inventory_list: list[dict], set_card_list: list[dict], 
     try:
         rarity_list_2_word_string = r"|".join([rarity_item.replace(" ", "-").replace("'", "").lower()
                                                for rarity_item in rarity_list if rarity_item not in ["Rare", "Parallel Rare"]])
-        pattern2_string_before_compile = fr"(https:\/\/tekkx\.com\/product\/)(.{2,4}-.{2,5})-.+-({rarity_list_2_word_string})-?\d{{0,1}}?\/$"
+        pattern2_string_before_compile = fr"(https:\/\/tekkx\.com\/product\/)(.{2, 4}-.{2, 5})-.+-({rarity_list_2_word_string})-?\d{{0,1}}?\/$"
         pattern2 = re.compile(pattern2_string_before_compile)
         pattern3 = re.compile(
             r"(https:\/\/tekkx\.com\/product\/)(.{2,4}-.{2,5})-(.+)-(rare)-?\d{0,1}?\/$")
