@@ -11,6 +11,14 @@
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
       "args": ["export"]
+    },
+    {
+      "name": "Upload Inventory Excel",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["upload"]
     }
   ]
 }
