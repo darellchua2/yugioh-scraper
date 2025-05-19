@@ -11,7 +11,7 @@ import concurrent.futures
 import csv
 
 from .tcgcorner_scraper import get_card_prices
-from ..utilities.aws_utilities import retrieve_data_from_db_to_df, get_engine_for_tekkx_scalable_db
+from ..utilities.aws_utilities import retrieve_data_from_db_to_df, get_engine_for_tekkx_scalable_db, save_df_to_mysql
 from ..utilities.misc_utilities import get_file_path, split
 """   LOAD ENV VARIABLES START   """
 RDS_HOST = os.getenv('RDS_HOST')
@@ -183,7 +183,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         return redirect_dict
 
 
-def export_inventory_excel():
+def export_inventory_excel_old():
     """
     Exports the inventory data and overall card code list to Excel files.
     """
@@ -214,6 +214,67 @@ def export_inventory_excel():
             with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
                 df_overall_card_code_list_mapped.to_excel(
                     writer, sheet_name="Sheet1", index=False)
+
+    except Exception as e:
+        logging.error(f"Error exporting inventory to Excel: {e}")
+
+
+def export_inventory_excel():
+    """
+    Updates Japanese entries from WordPress, keeps Asian English entries from DB, and saves the combined data.
+    """
+    try:
+        # Output paths
+        ygo_inventory_filename = "YGOInventoryV2.xlsx"
+        ygo_overall_card_list_filename = "OverallCardCodeList-2.xlsx"
+        ygo_inventory_export_path = get_file_path(ygo_inventory_filename)
+        ygo_overall_card_list_export_path = get_file_path(
+            ygo_overall_card_list_filename)
+
+        # 🟡 STEP 1: Pull latest Asian English entries from MySQL (if any)
+        try:
+            _, engine = get_engine_for_tekkx_scalable_db(db_name="yugioh_data")
+            query = "SELECT * FROM ygo_inventory_data WHERE region = 'Asian English'"
+            df_asian_english = pd.read_sql_query(query, engine)
+        except Exception as e:
+            logging.warning(f"No Asian English records found in DB yet: {e}")
+            df_asian_english = pd.DataFrame()
+
+        # 🔵 STEP 2: Pull updated Japanese entries from WordPress
+        df_website = retrieve_website_data()
+
+        # 🔁 STEP 3: Handle any name redirections
+        card_name_list = df_website["set_card_name_combined"].to_list()
+        dict_to_map = check_existing_card_names_to_update(card_name_list)
+        if dict_to_map:
+            df_to_replace_names = pd.DataFrame(
+                [{"name": key, "new name": value}
+                    for key, value in dict_to_map.items()]
+            )
+            df_website = pd.merge(
+                df_website, df_to_replace_names, how="left",
+                left_on="set_card_name_combined", right_on="name"
+            ).drop(columns=['name'])
+
+        # 🧩 STEP 4: Combine Japanese + Asian English
+        df_combined = pd.concat(
+            [df_website, df_asian_english], ignore_index=True)
+
+        # 🧾 STEP 5: Rebuild overall card code list (if needed)
+        df_overall_card_code_list_mapped = create_overall_card_code_list()
+
+        # 💾 STEP 6: Export combined to Excel
+        if ygo_inventory_export_path:
+            with pd.ExcelWriter(ygo_inventory_export_path, engine='xlsxwriter') as writer:
+                df_combined.to_excel(writer, sheet_name="V2", index=False)
+        if ygo_overall_card_list_export_path:
+            with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
+                df_overall_card_code_list_mapped.to_excel(
+                    writer, sheet_name="Sheet1", index=False)
+
+        # 🛢 STEP 7: Upload back to DB as the new source of truth
+        save_df_to_mysql(
+            df_combined, table_name="ygo_inventory_data", if_exists="replace")
 
     except Exception as e:
         logging.error(f"Error exporting inventory to Excel: {e}")
