@@ -41,7 +41,8 @@ class YugiohSet:
                  card_game: str | None = None,
                  release_date: str | None = None,
                  image_file: str | None = None,
-                 image_url: str | None = None
+                 image_url: str | None = None,
+                 region: str | None = None,
                  ):
         self.name = name
         self.set_code = set_code
@@ -50,6 +51,7 @@ class YugiohSet:
         self.release_date = release_date
         self.image_file = image_file
         self.image_url = image_url
+        self.region = region
 
         if not card_game:
             if language and language in ("JP", "KR", "JA", "AE"):
@@ -184,7 +186,8 @@ class YugiohSet:
             set_image=obj.get('set_image'),
             language=obj.get('language'),
             card_game=obj.get('card_game'),
-            release_date=obj.get('release_date')
+            release_date=obj.get('release_date'),
+            region=obj.get('region')
         )
 
 
@@ -413,7 +416,7 @@ class YugiohCard:
         self.pendulum_scale: str = self.get_first(
             attributes.get("Pendulum Scale", attributes.get("pendulum_scale", None)))
         self.pendulum_effect: str = format_lore(
-            self.get_first(attributes.get("Pendulum Effect"))) if self.get_first(attributes.get("Pendulum Effect")) else attributes.get("pendulum_effect", None)
+            self.get_first(attributes.get("Pendulum Effect", ""))) if self.get_first(attributes.get("Pendulum Effect")) else attributes.get("pendulum_effect", "")
         self.rank: str = self.get_first(
             attributes.get("Rank", attributes.get("rank", None)))
         self.ocg_status: str = self.extract_fulltext_single(
@@ -622,6 +625,8 @@ class YugiohSetCard:
                     "set_card_code": self.code,
                     "id": self.card.password,
                     "level": self.card.level if self.card.level is not None else self.card.rank if self.card.rank is not None else None,
+                    "region": self.set.region,
+                    "language": self.set.language,
                     "desc": desc,
                     "archetype": archetypes_list[0] if len(archetypes_list) > 0 else None,
                     "race": self.card.race,

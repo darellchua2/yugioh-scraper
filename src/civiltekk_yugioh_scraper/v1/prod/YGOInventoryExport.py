@@ -183,42 +183,6 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         return redirect_dict
 
 
-def export_inventory_excel_old():
-    """
-    Exports the inventory data and overall card code list to Excel files.
-    """
-    try:
-        ygo_inventory_filename = "YGOInventoryV2.xlsx"
-        ygo_overall_card_list_filename = "OverallCardCodeList-2.xlsx"
-        ygo_inventory_export_path = get_file_path(ygo_inventory_filename)
-        ygo_overall_card_list_export_path = get_file_path(
-            ygo_overall_card_list_filename)
-
-        df_website = retrieve_website_data()
-
-        card_name_list = df_website["set_card_name_combined"].to_list()
-
-        dict_to_map = check_existing_card_names_to_update(card_name_list)
-        if dict_to_map:
-            df_to_replace_names = pd.DataFrame(
-                [{"name": key, "new name": value} for key, value in dict_to_map.items()])
-            df_website = pd.merge(df_website, df_to_replace_names, how="left",
-                                  left_on="set_card_name_combined", right_on="name").drop(columns=['name'])
-
-        df_overall_card_code_list_mapped = create_overall_card_code_list()
-
-        if ygo_inventory_export_path:
-            with pd.ExcelWriter(ygo_inventory_export_path, engine='xlsxwriter') as writer:
-                df_website.to_excel(writer, sheet_name="V2", index=False)
-        if ygo_overall_card_list_export_path:
-            with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
-                df_overall_card_code_list_mapped.to_excel(
-                    writer, sheet_name="Sheet1", index=False)
-
-    except Exception as e:
-        logging.error(f"Error exporting inventory to Excel: {e}")
-
-
 def export_inventory_excel():
     """
     Updates Japanese entries from WordPress, keeps Asian English entries from DB, and saves the combined data.
