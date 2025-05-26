@@ -82,101 +82,115 @@ class YugiohSet:
 
         return self.__dict__
 
-    @classmethod
-    def get_yugioh_set_from_yugipedia_semantic_search(cls, set_name, printout_obj) -> YugiohSet:
-        # yugipedia_result example
-        #
-        #     {
-        #     "Japanese release date": [
-        #       { "timestamp": "1613779200", "raw": "1/2021/2/20" }
-        #     ],
-        #     "Japanese set prefix": ["21CC"],
-        #     "Page name": ["\"Amabie-San\" Present Campaign"],
-        #     "Set image": [
-        #       {
-        #         "fulltext": "21CC-PromoJP.png",
-        #         "fullurl": "https://yugipedia.com/wiki/21CC-PromoJP.png",
-        #         "namespace": 0,
-        #         "exists": "",
-        #         "displaytitle": ""
-        #       }
-        #     ],
-        #     "language":["JP"]
-        #   }
+    # @classmethod
+    # def get_yugioh_set_from_yugipedia_semantic_search(cls, set_name, printout_obj) -> YugiohSet:
+    #     """_summary_
 
-        name = set_name
-        # guid = uuid4()
-        set_code = printout_obj["Japanese set prefix"][0] if len(
-            printout_obj["Japanese set prefix"]) > 0 else None
-        set_image = printout_obj["Set image"][0]['fulltext'] if len(
-            printout_obj["Set image"]) > 0 else None
-        language = printout_obj["language"][0] if len(
-            printout_obj["language"]) > 0 else None
-        release_date = datetime.datetime.fromtimestamp(int(printout_obj["Japanese release date"][0]["timestamp"])).strftime('%Y-%m-%d') if len(
-            printout_obj["Japanese release date"]) > 0 else None
-        image_file = "File:{image_filename}".format(image_filename=printout_obj["Set image"][0]['fulltext']) if len(
-            printout_obj["Set image"]) > 0 else None
-        image_url = printout_obj['image_url'] if printout_obj['image_url'] else None
-        yugioh_set = YugiohSet(
-            name=name,
-            # guid=guid,
-            set_code=set_code,
-            set_image=set_image,
-            language=language,
-            release_date=release_date,
-            image_file=image_file,
-            image_url=image_url
-        )
+    #     yugipedia_result example
 
-        return yugioh_set
+    #         {
+    #         "Japanese release date": [
+    #           { "timestamp": "1613779200", "raw": "1/2021/2/20" }
+    #         ],
+    #         "Japanese set prefix": ["21CC"],
+    #         "Page name": ["\"Amabie-San\" Present Campaign"],
+    #         "Set image": [
+    #           {
+    #             "fulltext": "21CC-PromoJP.png",
+    #             "fullurl": "https://yugipedia.com/wiki/21CC-PromoJP.png",
+    #             "namespace": 0,
+    #             "exists": "",
+    #             "displaytitle": ""
+    #           }
+    #         ],
+    #         "language":["JP"]
+    #       }
 
-    @classmethod
-    def get_yugipedia_dict_from_yugioh_set(cls, yugioh_set):
-        if isinstance(yugioh_set, YugiohSet):
-            yugipedia_obj = {
-                "product": yugioh_set.name,
-                "Japanese set prefix": yugioh_set.set_code,
-                "date": yugioh_set.release_date,
-                "Set Card Lists": yugioh_set.yugipedia_set_card_list,
-                "Set Card Galleries": yugioh_set.yugipedia_set_card_gallery,
-                "Card Set Link": yugioh_set.yugipedia_set_card_list_url,
-                "gallery_url": yugioh_set.yugipedia_set_card_gallery_url
-            }
+    #     Parameters
+    #     ----------
+    #     set_name : _type_
+    #         _description_
+    #     printout_obj : _type_
+    #         _description_
+    #     Returns
+    #     -------
+    #     YugiohSet
+    #         _description_
+    #     """
 
-            return yugipedia_obj
+    #     name = set_name
+    #     # guid = uuid4()
+    #     set_code = printout_obj["Japanese set prefix"][0] if len(
+    #         printout_obj["Japanese set prefix"]) > 0 else None
+    #     set_image = printout_obj["Set image"][0]['fulltext'] if len(
+    #         printout_obj["Set image"]) > 0 else None
+    #     language = printout_obj["language"][0] if len(
+    #         printout_obj["language"]) > 0 else None
+    #     release_date = datetime.datetime.fromtimestamp(int(printout_obj["Japanese release date"][0]["timestamp"])).strftime('%Y-%m-%d') if len(
+    #         printout_obj["Japanese release date"]) > 0 else None
+    #     image_file = "File:{image_filename}".format(image_filename=printout_obj["Set image"][0]['fulltext']) if len(
+    #         printout_obj["Set image"]) > 0 else None
+    #     image_url = printout_obj['image_url'] if printout_obj['image_url'] else None
+    #     yugioh_set = YugiohSet(
+    #         name=name,
+    #         # guid=guid,
+    #         set_code=set_code,
+    #         set_image=set_image,
+    #         language=language,
+    #         release_date=release_date,
+    #         image_file=image_file,
+    #         image_url=image_url
+    #     )
 
-    @classmethod
-    def get_dict_from_yugipedia_semantic_search(cls, set_name: str, printout_obj: dict):
-        name = set_name
-        guid = uuid4()
-        set_code = printout_obj["Japanese set prefix"][0] if len(
-            printout_obj["Japanese set prefix"]) > 0 else None
-        set_image = printout_obj["Set image"][0] if len(
-            printout_obj["Set image"]) > 0 else None
-        language = printout_obj["language"][0] if len(
-            printout_obj["language"]) > 0 else None
-        release_date = datetime.datetime.fromtimestamp(int(printout_obj["Japanese release date"][0]["timestamp"])).strftime('%Y-%m-%d') if len(
-            printout_obj["Japanese release date"]) > 0 else None
+    #     return yugioh_set
 
-        yugioh_set = YugiohSet(
-            name=name,
-            set_code=set_code,
-            set_image=set_image,
-            language=language,
-            release_date=release_date
-        )
+    # @classmethod
+    # def get_yugipedia_dict_from_yugioh_set(cls, yugioh_set):
+    #     if isinstance(yugioh_set, YugiohSet):
+    #         yugipedia_obj = {
+    #             "product": yugioh_set.name,
+    #             "Japanese set prefix": yugioh_set.set_code,
+    #             "date": yugioh_set.release_date,
+    #             "Set Card Lists": yugioh_set.yugipedia_set_card_list,
+    #             "Set Card Galleries": yugioh_set.yugipedia_set_card_gallery,
+    #             "Card Set Link": yugioh_set.yugipedia_set_card_list_url,
+    #             "gallery_url": yugioh_set.yugipedia_set_card_gallery_url
+    #         }
 
-        yugipedia_obj = {
-            "product": yugioh_set.name,
-            "Japanese set prefix": yugioh_set.set_code,
-            "date": yugioh_set.release_date,
-            "Set Card Lists": yugioh_set.yugipedia_set_card_list,
-            "Set Card Galleries": yugioh_set.yugipedia_set_card_gallery,
-            "Card Set Link": yugioh_set.yugipedia_set_card_list_url,
-            "gallery_url": yugioh_set.yugipedia_set_card_gallery_url
-        }
+    #         return yugipedia_obj
 
-        return yugipedia_obj
+    # @classmethod
+    # def get_dict_from_yugipedia_semantic_search(cls, set_name: str, printout_obj: dict):
+    #     name = set_name
+    #     guid = uuid4()
+    #     set_code = printout_obj["Japanese set prefix"][0] if len(
+    #         printout_obj["Japanese set prefix"]) > 0 else None
+    #     set_image = printout_obj["Set image"][0] if len(
+    #         printout_obj["Set image"]) > 0 else None
+    #     language = printout_obj["language"][0] if len(
+    #         printout_obj["language"]) > 0 else None
+    #     release_date = datetime.datetime.fromtimestamp(int(printout_obj["Japanese release date"][0]["timestamp"])).strftime('%Y-%m-%d') if len(
+    #         printout_obj["Japanese release date"]) > 0 else None
+
+    #     yugioh_set = YugiohSet(
+    #         name=name,
+    #         set_code=set_code,
+    #         set_image=set_image,
+    #         language=language,
+    #         release_date=release_date
+    #     )
+
+    #     yugipedia_obj = {
+    #         "product": yugioh_set.name,
+    #         "Japanese set prefix": yugioh_set.set_code,
+    #         "date": yugioh_set.release_date,
+    #         "Set Card Lists": yugioh_set.yugipedia_set_card_list,
+    #         "Set Card Galleries": yugioh_set.yugipedia_set_card_gallery,
+    #         "Card Set Link": yugioh_set.yugipedia_set_card_list_url,
+    #         "gallery_url": yugioh_set.yugipedia_set_card_gallery_url
+    #     }
+
+    #     return yugipedia_obj
 
     @classmethod
     def get_yugioh_set_from_db_obj(cls, obj: dict) -> YugiohSet:
