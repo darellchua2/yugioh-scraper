@@ -1,0 +1,112 @@
+name: Update Version and Deploy Python Package
+
+# add comments 2
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_test:
+    name: Update Version and Deploy Python Package
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CODEARTIFACT_REPOSITORY: ${{ secrets.CODEARTIFACT_PYTHON_REPO }}
+      DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+      DOMAIN_OWNER: ${{ secrets.DOMAIN_OWNER }}
+      AWS_CODEARTIFACT_PYTHON_IAM_ROLE: ${{ secrets.AWS_CODEARTIFACT_PYTHON_IAM_ROLE }}
+      PYTHON_VERSION: 3.12
+
+    concurrency:
+      group: update-version-and-deploy
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Log Branch
+        run: |
+          echo "Triggered by push to: ${{ github.ref }}"
+
+      - name: Check for [skip ci]
+        if: contains(github.event.head_commit.message, '[skip ci]')
+        run: exit 0
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{env.PYTHON_VERSION}}
+
+      - name: Python Semantic Release
+        id: semantic_release
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-semantic-release[ci]
+          next_version=$(semantic-release version --print)
+          echo "NEXT_VERSION=$next_version" >> $GITHUB_ENV
+
+      - name: Update pyproject.toml with New Version
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ env.NEXT_VERSION }}\"/" pyproject.toml
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Lock Dependencies
+        run: poetry lock
+
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{env.PYTHON_VERSION}}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install Dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --with dev --no-interaction --no-root
+
+      - name: Build Project
+        run: poetry build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ secrets.AWS_CODEARTIFACT_PYTHON_IAM_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Generate CodeArtifact Token
+        run: |
+          export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token \
+            --domain ${{ secrets.DOMAIN_NAME }} \
+            --domain-owner ${{ secrets.DOMAIN_OWNER }} \
+            --query authorizationToken \
+            --output text)
+          echo "CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN" >> $GITHUB_ENV
+
+      - name: Publish to CodeArtifact
+        run: |
+          poetry config repositories.codeartifact https://${{secrets.DOMAIN_NAME}}-${{secrets.DOMAIN_OWNER}}.d.codeartifact.${{secrets.AWS_REGION}}.amazonaws.com/pypi/${{secrets.CODEARTIFACT_PYTHON_REPO}}/
+          poetry config pypi-token.codeartifact ${{ env.CODEARTIFACT_AUTH_TOKEN }}
+          poetry publish --repository codeartifact
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add pyproject.toml poetry.lock
+          git commit -m "ci: Bump version to ${{ env.NEXT_VERSION }} [skip ci]"
+          git push origin ${{ github.ref }}
+          git tag v${{ env.NEXT_VERSION }}
+          git push --tags
