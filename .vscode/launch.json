@@ -35,6 +35,14 @@
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
       "args": ["scrape_yugipedia"]
+    },
+    {
+      "name": "test_scrape",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["test_scrape"]
     }
   ]
 }
