@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import string
 from ..models.yugipedia_models import YugiohCard, YugiohSet, YugiohRarity, YugiohSetCard
-from typing import Any, Dict, List, Optional, Sequence, TypedDict
+from typing import Any, Dict, List, Optional
 from ..config import MEDIAWIKI_URL, HEADERS, TABLE_YUGIOH_CARDS, TABLE_YUGIOH_SETS, TABLE_YUGIOH_RARITIES
 #### HEADERS START ####
 

@@ -1,6 +1,5 @@
 import pandas as pd
 import datetime
-import os
 from sqlalchemy import text
 import logging
 import requests
@@ -11,15 +10,7 @@ import csv
 from .tcgcorner_scraper import get_card_prices
 from ..utilities.aws_utilities import retrieve_data_from_db_to_df, get_engine_for_tekkx_scalable_db, save_df_to_mysql
 from ..utilities.misc_utilities import get_file_path, split
-from ..config import HEADERS, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS, MEDIAWIKI_URL
-"""   LOAD ENV VARIABLES START   """
-RDS_HOST = os.getenv('RDS_HOST')
-NAME = os.getenv('user')
-PASSWORD = os.getenv('password')
-DB_NAME = os.getenv('db_name', "")
-YUGIOH_DB = os.getenv("yugioh_db")
-DB_PORT = os.getenv("DB_PORT")
-"""   LOAD ENV VARIABLES END   """
+from ..config import HEADERS, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS, MEDIAWIKI_URL, TEKKX_SCALABLE_DB_NAME
 
 
 def create_overall_card_code_list() -> pd.DataFrame:
@@ -55,7 +46,8 @@ def retrieve_website_data() -> pd.DataFrame:
     start = datetime.datetime.now()
 
     try:
-        logger, engine = get_engine_for_tekkx_scalable_db(db_name=DB_NAME)
+        logger, engine = get_engine_for_tekkx_scalable_db(
+            db_name=TEKKX_SCALABLE_DB_NAME)
 
         with engine.begin() as conn:
             df_posts = pd.read_sql_query(

@@ -4,3 +4,4 @@ from .v1.prod.bigwebscrape import bigweb_scrape
 from .v1.prod.yuyuteiscrape2 import yuyutei_scrape
 from .v1.prod.card_list_scraper import card_list_scraper
 from .v1.prod.set_card_list_scraper import scrape_main
+from .v1.config import *

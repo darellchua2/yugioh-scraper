@@ -7,21 +7,12 @@ import time
 import logging
 import pandas as pd
 import os
+from ...config import HEADERS, MEDIAWIKI_URL, SEMANTIC_URL, TABLE_YUGIOH_SETS
 
 from ..aws_utilities import upload_data
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
-
-MEDIAWIKI_URL: str = "https://yugipedia.com/api.php"
-SEMANTIC_URL: str = "https://yugipedia.com/index.php"
-TABLE_YUGIOH_SETS = 'yugioh_sets3'
-
-HEADERS: Dict[str, str] = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'
-}
 
 
 def clean_set_name(name: str, region: str, is_gallery: bool = False) -> str:

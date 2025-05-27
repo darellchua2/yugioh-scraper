@@ -1,12 +1,7 @@
 import requests
 from typing import List, Dict, Any, Optional
 from ...models.yugipedia_models import YugiohCard
-
-HEADERS: Dict[str, str] = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'
-}
+from ...config import HEADERS
 
 
 def card_semantic_search_params(character: str, offset: int, limit: int = 500) -> Dict[str, Any]:
