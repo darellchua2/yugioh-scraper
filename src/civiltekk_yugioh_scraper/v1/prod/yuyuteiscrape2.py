@@ -5,7 +5,7 @@ from io import BytesIO
 from typing import Any
 import requests
 import bs4 as bs
-from bs4 import BeautifulSoup, Tag, NavigableString
+from bs4 import BeautifulSoup, Tag
 import pandas as pd
 import datetime
 from dotenv import load_dotenv
@@ -153,7 +153,7 @@ def get_set_list(url: str) -> list[dict]:
     response.encoding = 'utf-8'
     source = response.text
     soup = bs.BeautifulSoup(source, 'html.parser')
-    div: bs.Tag | bs.NavigableString | None = soup.find(
+    div: bs.Tag | None = soup.find(
         'div', id='side-sell-single')
     if not div:
         return []
@@ -190,7 +190,7 @@ def get_set_list_v2(url: str) -> list[dict]:
         return []
 
     soup = BeautifulSoup(source, 'html.parser')
-    div: Tag | NavigableString | None = soup.find('div', id='side-sell-single')
+    div: Tag | None = soup.find('div', id='side-sell-single')
     if not div or not isinstance(div, Tag):
         print("Target div not found or is not a valid Tag")
         return []
