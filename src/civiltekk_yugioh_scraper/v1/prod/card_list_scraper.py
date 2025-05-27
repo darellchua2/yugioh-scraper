@@ -5,8 +5,6 @@ from ..utilities.aws_utilities import upload_data
 
 from dotenv import load_dotenv
 
-TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
-
 
 def card_list_scraper() -> tuple[pd.DataFrame, pd.DataFrame]:
     start = datetime.datetime.now()

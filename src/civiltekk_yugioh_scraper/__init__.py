@@ -3,4 +3,4 @@ from .v1.models.yugipedia_models import YugiohCard, YugiohRarity, YugiohSet, Yug
 from .v1.prod.bigwebscrape import bigweb_scrape
 from .v1.prod.yuyuteiscrape2 import yuyutei_scrape
 from .v1.prod.card_list_scraper import card_list_scraper
-from .v1.prod.test_scrape import scrape_main
+from .v1.prod.set_card_list_scraper import scrape_main
