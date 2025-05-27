@@ -1,4 +1,3 @@
-import json
 import os
 import time
 
@@ -16,26 +15,8 @@ import concurrent.futures
 import string
 from ..models.yugipedia_models import YugiohCard, YugiohSet, YugiohRarity, YugiohSetCard
 from typing import Any, Dict, List, Optional, Sequence, TypedDict
-
+from ..config import MEDIAWIKI_URL, HEADERS, TABLE_YUGIOH_CARDS, TABLE_YUGIOH_SETS, TABLE_YUGIOH_RARITIES
 #### HEADERS START ####
-MEDIAWIKI_URL = "https://yugipedia.com/api.php"
-SEMANTIC_URL = "https://yugipedia.com/index.php"
-HEADERS: dict[str, str] = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'  # This is another valid field
-}
-TABLE_YUGIOH_CARDS = 'yugioh_cards2'
-TABLE_YUGIOH_SETS = 'yugioh_sets3'
-TABLE_YUGIOH_RARITIES = 'yugioh_rarities3'
-TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
-# Constants for reuse
-RARITY_CATEGORIES_TO_SKIP = ["Variant card",
-                             "Unlimited Edition",
-                             "Rarity (grade)",
-                             "Rarity",
-                             "BAM Legend"]
-#### HEADERS END ####
 
 
 def card_semantic_search_params(character, offset, limit=500) -> dict:

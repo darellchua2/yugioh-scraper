@@ -5,19 +5,7 @@ import time
 import os
 import platform
 from typing import Generator, Tuple, Optional
-
-# Constants/Strings as Declarative Variables
-JAPANESE_CHARS_REGEX = r'[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]+ (?=[A-Za-z ]+–)'
-WINDOWS_EXPORT_PATH: str = r'\\192.168.50.227\personal'
-LINUX_EXPORT_PATH: str = r'/home/silentx'
-READ_TIMEOUT_ERROR = "ReadTimeoutError"
-JSON_ERROR = "JSONDecodeError"
-BASE_TEKKX_PRODUCT_URL = "https://tekkx.com/product/{slug}/"
-BIGWEB_DEFAULT_HEADER = {
-    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-    "content-type": "application/json",
-    "sec-ch-ua": '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"'
-}
+from ..config import JAPANESE_CHARS_REGEX, WINDOWS_EXPORT_PATH, LINUX_EXPORT_PATH, READ_TIMEOUT_ERROR, JSON_ERROR, BASE_TEKKX_PRODUCT_URL, BIGWEB_DEFAULT_HEADER
 
 
 def check_for_jap_chars(x: str) -> bool:

@@ -5,9 +5,7 @@ import csv
 import re
 
 from ..utilities.aws_utilities import save_to_s3
-
-DEFAULT_CARD_QUANTITY_INTERVAL = 250
-BUCKET_NAME = 'yugioh-storage'
+from ..config import DEFAULT_CARD_QUANTITY_INTERVAL, BUCKET_NAME
 
 
 def get_tcgcorner_url(page_number: int):

@@ -1,10 +1,8 @@
 import pandas as pd
 import datetime
 import os
-import sys
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 import logging
-import pymysql
 import requests
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
@@ -13,6 +11,7 @@ import csv
 from .tcgcorner_scraper import get_card_prices
 from ..utilities.aws_utilities import retrieve_data_from_db_to_df, get_engine_for_tekkx_scalable_db, save_df_to_mysql
 from ..utilities.misc_utilities import get_file_path, split
+from ..config import HEADERS, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS, MEDIAWIKI_URL
 """   LOAD ENV VARIABLES START   """
 RDS_HOST = os.getenv('RDS_HOST')
 NAME = os.getenv('user')
@@ -21,17 +20,6 @@ DB_NAME = os.getenv('db_name', "")
 YUGIOH_DB = os.getenv("yugioh_db")
 DB_PORT = os.getenv("DB_PORT")
 """   LOAD ENV VARIABLES END   """
-
-### STATIC VARIABLES START ###
-URL = "https://yugipedia.com/api.php"
-SEMANTIC_URL = "https://yugipedia.com/index.php"
-HEADERS = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'
-}
-TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
-### STATIC VARIABLES END ###
 
 
 def create_overall_card_code_list() -> pd.DataFrame:
@@ -160,7 +148,8 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
     }
 
     try:
-        res_json = requests.get(url=URL, headers=HEADERS, params=obj).json()
+        res_json = requests.get(
+            url=MEDIAWIKI_URL, headers=HEADERS, params=obj).json()
         res_json_query_obj: dict = res_json.get("query", {})
 
         if "redirects" in res_json_query_obj:
@@ -170,7 +159,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         while "continue" in res_json:
             obj["rdcontinue"] = res_json["continue"].get("rdcontinue", "")
             res_json = requests.get(
-                url=URL, headers=HEADERS, params=obj).json()
+                url=MEDIAWIKI_URL, headers=HEADERS, params=obj).json()
             res_json_query_obj = res_json.get("query", {})
 
             if "redirects" in res_json_query_obj:
