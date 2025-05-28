@@ -447,9 +447,9 @@ class YugiohRarity:
 
 class YugiohSetCard:
     def __init__(self,
-                 yugioh_set: YugiohSet,
-                 yugioh_card: YugiohCard,
-                 yugioh_rarity: YugiohRarity,
+                 yugioh_set: YugiohSet | None,
+                 yugioh_card: YugiohCard | None,
+                 yugioh_rarity: YugiohRarity | None,
                  code: str | None = None,
                  image_url: str | None = None,
                  image_file: str | None = None,
