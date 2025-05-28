@@ -1,6 +1,8 @@
 import os
 import time
 
+from ..prod.set_card_list_scraper import get_yugioh_set_cards_from_set_card_list_names
+
 from ..utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
 
 from .yugipedia.yugipedia_scraper_set_v2 import get_yugioh_sets_v2
@@ -630,7 +632,7 @@ def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file(obj) -> list[d
     return image_file_obj_list
 
 
-def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file_v2(yugioh_set_cards: List[YugiohSetCard]) -> tuple[list[dict], List[YugiohSetCard]]:
+def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file_v2(yugioh_set_cards: List[YugiohSetCard]) -> List[YugiohSetCard]:
     yugioh_set_cards_updated: List[YugiohSetCard] = []
     image_file_obj_list: list[dict] = []
     image_file_strings: list[str] = [
@@ -678,7 +680,7 @@ def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file_v2(yugioh_set_
         print(e.args)
         pass
 
-    return image_file_obj_list, yugioh_set_cards_updated
+    return yugioh_set_cards_updated
 
 
 def get_yugioh_set_card_relationship_if_available_from_yugioh_set_card_image_file(obj) -> tuple[list[dict], list[dict]]:
@@ -974,6 +976,7 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
 def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     yugioh_set_cards_v2: List[YugiohSetCard] = []
     yugioh_set_cards_v2_step2: List[YugiohSetCard] = []
+    yugioh_set_cards_v2_overall: List[YugiohSetCard] = []
     yugioh_set_objs_from_db = retrieve_data_from_db_to_df(
         TABLE_YUGIOH_SETS, db_name='yugioh_data').to_dict(orient='records')
     yugioh_rarity_objs_from_db = retrieve_data_from_db_to_df(
@@ -1002,7 +1005,6 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     yugioh_set_cards: list[YugiohSetCard] = []
     yugioh_set_card_image_file_overall_list: list[dict[str, str | YugiohSet | None]] = [
     ]
-    yugioh_set_card_image_file_overall_list_with_image_urls: list[dict] = []
     yugioh_set_card_code_overall_list: list[dict[str, str | YugiohSet]] = []
     yugioh_set_with_missing_links_overall_list: list[YugiohSet] = []
     yugioh_set_card_code_overall_list_with_card_names: list[dict] = []
@@ -1022,8 +1024,6 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
         print("Total image_card_url_overall_list items:{overall_list_count}".format(
             overall_list_count=len(yugioh_set_card_image_file_overall_list)))
 
-    yugioh_set_card_image_file_overall_split_list: list[list[dict[str, str | YugiohSet | None]]] = list(
-        split(yugioh_set_card_image_file_overall_list, 25))
     yugioh_set_cards_v2_split_list = list(
         split(yugioh_set_cards_v2, 25))
 
@@ -1040,134 +1040,50 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
                 yugioh_set_cards_v2_step2.extend(
                     result1)
 
-        print("Total yugioh_set_card_image_file_overall_list_with_image_urls items:{overall_list_count}".format(
-            overall_list_count=len(yugioh_set_card_image_file_overall_list_with_image_urls)))
+        print("Total yugioh_set_cards_v2_step2 items:{overall_list_count}".format(
+            overall_list_count=len(yugioh_set_cards_v2_step2)))
 
     yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list: list[dict] = [
     ]
 
-    # reset  yugioh_set_card_image_file_overall_list_with_image_urls
-    yugioh_set_card_relationship_overall_list: list[dict] = []
+    # 3. get yugioh_set_card_from_set_card_codes
+    yugioh_set_cards_v2_from_set_card_lists: List[YugiohSetCard] = []
 
-    yugioh_set_card_image_file_and_image_url_overall_split_list: list[list[dict]] = list(
-        split(yugioh_set_card_image_file_overall_list, 3))
-
-    # reset  yugioh_set_card_image_file_overall_list_with_image_urls
-    yugioh_set_card_relationship_overall_list: list[dict] = []
-
-    # 3. from image_file to get image_url
-    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
-        futures = []
-        for split_list in yugioh_set_card_image_file_and_image_url_overall_split_list:
-            overall_obj["split_list"] = split_list
-            futures.append(executor.submit(
-                get_yugioh_set_card_relationship_if_available_from_yugioh_set_card_image_file, overall_obj.copy()))
-
-        for future in concurrent.futures.as_completed(futures):
-            image_file_obj_list, missing_links_image_file_obj_list = future.result()
-            yugioh_set_card_relationship_overall_list.extend(
-                image_file_obj_list)
-            yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list.extend(
-                missing_links_image_file_obj_list)
-
-        print("Total yugioh_set_card_image_file_overall_list_with_image_urls items:{overall_list_count}".format(
-            overall_list_count=len(yugioh_set_card_relationship_overall_list)))
-
-    # 4. get from card_set_gallery to set_card_code list
-    yugioh_set_split_list = list(split(yugioh_sets, 1))
     with ThreadPoolExecutor() as executor:  # optimally defined number of threads
         futures = []
         for split_list in yugioh_set_split_list:
-            overall_obj["split_list"] = split_list
             futures.append(executor.submit(
-                get_yugioh_set_card_code_from_set_list, overall_obj.copy()))
+                get_yugioh_set_cards_from_set_card_list_names, split_list, yugioh_sets, yugioh_cards, yugioh_rarities))
 
         for future in concurrent.futures.as_completed(futures):
-            yugioh_set_card_code_list, yugioh_set_with_missing_links = future.result()
+            result = future.result()
+            yugioh_set_cards_v2_from_set_card_lists.extend(result)
 
-            yugioh_set_card_code_overall_list.extend(yugioh_set_card_code_list)
-            yugioh_set_with_missing_links_overall_list.extend(
-                yugioh_set_with_missing_links)
+        print("Total yugioh_set_cards_from_set_card_lists items:{overall_list_count}".format(
+            overall_list_count=len(yugioh_set_cards_v2_from_set_card_lists)))
 
-        print("Total yugioh_set_card_code_overall_list items:{overall_list_count}".format(
-            overall_list_count=len(yugioh_set_card_code_overall_list)))
+    yugioh_set_cards_v2_overall = consolidate_yugioh_set_cards(
+        yugioh_set_cards_with_images=yugioh_set_cards_v2,
+        yugioh_set_cards_with_codes=yugioh_set_cards_v2_from_set_card_lists,
+        yugioh_sets=yugioh_sets,
+        yugioh_cards=yugioh_cards,
+        yugioh_rarities=yugioh_rarities
+    )
 
-    yugioh_set_card_code_overall_split_list = list(
-        split(yugioh_set_card_code_overall_list, 10))
+    return yugioh_set_cards_v2_overall, yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list
 
-    # 5. get from set_card_code mapped to yugioh card list
-    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
-        futures = []
-        for split_list in yugioh_set_card_code_overall_split_list:
-            overall_obj["split_list"] = split_list
-            futures.append(executor.submit(
-                get_yugioh_set_card_name_from_set_card_code, overall_obj.copy()))
-        for future in concurrent.futures.as_completed(futures):
-            yugioh_set_card_code_overall_list_with_card_names.extend(
-                future.result())
 
-        print("Total yugioh_set_card_code_overall_list_with_card_names items:{overall_list_count}".format(
-            overall_list_count=len(yugioh_set_card_code_overall_list_with_card_names)))
+def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCard],
+                                 yugioh_set_cards_with_codes: List[YugiohSetCard],
+                                 yugioh_sets: List[YugiohSet],
+                                 yugioh_cards: List[YugiohCard],
+                                 yugioh_rarities: List[YugiohRarity]):
+    yugioh_set_cards_final: List[YugiohSetCard] = []
+    # for ygo_set_card_image in yugioh_set_cards_with_images:
+    #     ygo_set_card_with_codes_found = next(
 
-    # 6. fill in missing card and rarity
-    # find missing card and rarity for objects that to date did not fill in all objects
-    # up to this stage all is correct. ###################
-    yugioh_set_card_image_file_overall_list_updated_2_missing = [obj for obj in yugioh_set_card_image_file_overall_list
-                                                                 if obj.get('yugioh_rarity', None) is None or obj.get('yugioh_card', None) is None]
-
-    yugioh_set_card_image_file_overall_list_updated_2_missing_split_list = list(
-        split(yugioh_set_card_image_file_overall_list_updated_2_missing, 500))
-
-    yugioh_set_cards: list[YugiohSetCard] = []
-    yugioh_set_card_dict_list_found_from_missing_cards_and_rarity: list[dict] = [
-    ]
-    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
-        futures = []
-        for split_list in yugioh_set_card_image_file_overall_list_updated_2_missing_split_list:
-            overall_obj["yugioh_set_card_image_file_overall_list_with_image_urls"] = split_list
-            overall_obj['yugioh_set_card_code_overall_list_with_card_names'] = yugioh_set_card_code_overall_list_with_card_names
-            futures.append(executor.submit(
-                get_yugioh_set_cards_from_information_obj_for_missing_links, overall_obj.copy()))
-        for future in concurrent.futures.as_completed(futures):
-            yugioh_set_card_dict_list_found_from_missing_cards_and_rarity.extend(
-                future.result())
-
-        print("Total yugioh_set_card_dict_list_found_from_missing_cards_and_rarity items:{overall_list_count}".format(
-            overall_list_count=len(yugioh_set_card_dict_list_found_from_missing_cards_and_rarity)))
-
-    # 6.2 update yugioh_set_card_image_file_overall_list_updated_2_filtered with missing information
-    yugioh_set_card_image_file_overall_list_updated_3: list[dict] = []
-    for dict_obj in yugioh_set_card_image_file_overall_list:
-        dict_obj_updated = dict_obj.copy()
-        if dict_obj_updated.get('yugioh_card', None) is None or dict_obj_updated.get("yugioh_rarity", None) is None:
-            updated_dict_obj_from_step_6 = next(
-                (obj for obj in yugioh_set_card_dict_list_found_from_missing_cards_and_rarity if obj['image_file'] == dict_obj_updated['image_file']), None)
-            if updated_dict_obj_from_step_6 is not None:
-                dict_obj_updated['yugioh_card'] = updated_dict_obj_from_step_6['yugioh_card']
-                dict_obj_updated['yugioh_rarity'] = updated_dict_obj_from_step_6['yugioh_rarity']
-        yugioh_set_card_image_file_overall_list_updated_3.append(
-            dict_obj_updated.copy())
-
-    yugioh_set_card_image_file_overall_list_updated_3_filtered_split_list = list(
-        split(yugioh_set_card_image_file_overall_list_updated_3, 1000))
-
-    # 7. consolidate results and create yugioh_set_card
-    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
-        futures = []
-        for split_list in yugioh_set_card_image_file_overall_list_updated_3_filtered_split_list:
-            overall_obj["yugioh_set_card_image_file_overall_list_with_image_urls"] = split_list
-            overall_obj['yugioh_set_card_code_overall_list_with_card_names'] = yugioh_set_card_code_overall_list_with_card_names
-            futures.append(executor.submit(
-                get_yugioh_set_cards_from_consolidated_list, overall_obj.copy()))
-        for future in concurrent.futures.as_completed(futures):
-            results: list[YugiohSetCard] = future.result()
-            yugioh_set_cards.extend(
-                results)
-
-        print("Total yugioh_set_cards items:{overall_list_count}".format(
-            overall_list_count=len(yugioh_set_cards)))
-
-    return yugioh_set_cards, yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list
+    #     )
+    return yugioh_set_cards_final
 
 
 def get_yugioh_set_cards_from_information_obj_for_missing_links(overall_obj: dict) -> list[dict]:

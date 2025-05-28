@@ -58,7 +58,8 @@ def parse_set_list(wikitext_map: dict[str, str]) -> pd.DataFrame:
         card_lines = re.findall(r'\n([A-Z]+-[A-Z]+[0-9]+[^\n]*)', wikitext)
 
         for line in card_lines:
-            parts = [p.strip() for p in line.split(';')]
+            clean_line = re.sub(r'//.*', '', line)  # remove inline comments
+            parts = [p.strip() for p in clean_line.split(';')]
             set_card_code = parts[0] if len(parts) > 0 else None
             card_name = parts[1] if len(parts) > 1 else None
             rarities = parts[2] if len(
@@ -108,7 +109,8 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
         card_lines = re.findall(r'\n([A-Z]+-[A-Z]+[0-9]+[^\n]*)', wikitext)
 
         for line in card_lines:
-            parts = [p.strip() for p in line.split(';')]
+            clean_line = re.sub(r'//.*', '', line)  # remove inline comments
+            parts = [p.strip() for p in clean_line.split(';')]
             set_card_code = parts[0] if len(parts) > 0 else None
             card_name = parts[1] if len(parts) > 1 else None
             yugioh_card_found = next(
@@ -134,12 +136,26 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
     return all_records
 
 
+def get_yugioh_set_cards_from_set_card_list_names(split_list: List[YugiohSet],
+                                                  yugioh_sets: List[YugiohSet],
+                                                  yugioh_cards: List[YugiohCard],
+                                                  yugioh_rarities: List[YugiohRarity]) -> List[YugiohSetCard]:
+    page_titles: list[str] = [
+        ygo_set.yugipedia_set_card_list for ygo_set in split_list]
+    wikitext_map = get_wikitext(page_titles=page_titles)
+    yugioh_set_cards = parse_set_lists_from_wikitext_map(wikitext_map=wikitext_map,
+                                                         yugioh_cards=yugioh_cards,
+                                                         yugioh_sets=yugioh_sets,
+                                                         yugioh_rarities=yugioh_rarities)
+    return yugioh_set_cards
+
+
 def scrape_main():
     # === USAGE ===
     page_titles = [
         "Set Card Lists:Age of Overlord (OCG-AE)", "Set Card Lists:Infinite Forbidden (OCG-AE)"]
-    wikitext = get_wikitext(page_titles)
-    df = parse_set_list(wikitext)
+    wikitext_map = get_wikitext(page_titles)
+    df = parse_set_list(wikitext_map)
     df.to_csv("./output/test_scrape.csv", index=False)
     # Display or save result
     print(df.head())
