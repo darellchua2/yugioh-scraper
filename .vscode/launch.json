@@ -19,6 +19,30 @@
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
       "args": ["upload"]
+    },
+    {
+      "name": "scrape_yugipedia_set_cards",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["scrape_yugipedia_set_cards"]
+    },
+    {
+      "name": "scrape_yugipedia",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["scrape_yugipedia"]
+    },
+    {
+      "name": "test_scrape",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["test_scrape"]
     }
   ]
 }

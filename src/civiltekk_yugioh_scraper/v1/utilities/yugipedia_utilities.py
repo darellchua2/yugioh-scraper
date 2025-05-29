@@ -1,6 +1,7 @@
-import json
 import os
 import time
+
+from ..prod.set_card_list_scraper import get_yugioh_set_cards_from_set_card_list_names
 
 from ..utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
 
@@ -15,27 +16,8 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import string
 from ..models.yugipedia_models import YugiohCard, YugiohSet, YugiohRarity, YugiohSetCard
-from typing import Any, Dict, List, Optional, TypedDict
-
-#### HEADERS START ####
-MEDIAWIKI_URL = "https://yugipedia.com/api.php"
-SEMANTIC_URL = "https://yugipedia.com/index.php"
-HEADERS: dict[str, str] = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'  # This is another valid field
-}
-TABLE_YUGIOH_CARDS = 'yugioh_cards2'
-TABLE_YUGIOH_SETS = 'yugioh_sets3'
-TABLE_YUGIOH_RARITIES = 'yugioh_rarities3'
-TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
-# Constants for reuse
-RARITY_CATEGORIES_TO_SKIP = ["Variant card",
-                             "Unlimited Edition",
-                             "Rarity (grade)",
-                             "Rarity",
-                             "BAM Legend"]
-#### HEADERS END ####
+from typing import Any, Dict, List, Optional
+from ..config import MEDIAWIKI_URL, HEADERS, TABLE_YUGIOH_CARDS, TABLE_YUGIOH_SETS, TABLE_YUGIOH_RARITIES
 
 
 def card_semantic_search_params(character, offset, limit=500) -> dict:
@@ -179,14 +161,14 @@ def is_link_card_set_code(set_card_code) -> tuple[str | None, str | None]:
         return None, None
 
 
-def get_split_data_from_image_file_v2(image_file: str) -> tuple[str | None, str | None, str | None, str | None, str | None, str | None, bool | None]:
+def get_split_data_from_image_file_v2(image_file: str) -> tuple[str | None, str | None, str | None, str | None, str | None, str | None, bool]:
     pat1 = re.compile(
         r"^File:(.[^\-]+)-(.[^\-]+)-(.[^\-]+)-(.[^\-]*)-?(.[^\-]*)?(.png|.jpg|.jpeg|.gif)$")
     pat_match = pat1.match(image_file)
     if pat_match:
         yugioh_card_image_name = pat_match.group(1)
         yugioh_set_code = pat_match.group(2)
-        yugioh_set_region = pat_match.group(3)
+        yugioh_set_language = pat_match.group(3)
         yugioh_rarity_code = pat_match.group(
             4)
         alternate_art_code = pat_match.group(
@@ -196,9 +178,9 @@ def get_split_data_from_image_file_v2(image_file: str) -> tuple[str | None, str 
 
         if alternate_art_code in ["AA", "Alt"]:
             is_alternate_art = True
-        return yugioh_card_image_name, yugioh_set_code, yugioh_set_region, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art
+        return yugioh_card_image_name, yugioh_set_code, yugioh_set_language, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art
     else:
-        return None, None, None, None, None, None, None
+        return None, None, None, None, None, None, False
 
 
 def is_image_file_yugioh_set_card(image_file) -> tuple[bool, bool]:
@@ -280,7 +262,7 @@ def get_image_links_from_image_file_mediawiki_params(image_card_urls: list[str])
     return obj
 
 
-def get_yugioh_set_card_image_file(obj: dict) -> list[dict[str, str]]:
+def get_yugioh_set_card_image_file(obj: dict) -> list[dict[str, str | YugiohSet]]:
     """_summary_
 
     Parameters
@@ -304,14 +286,18 @@ def get_yugioh_set_card_image_file(obj: dict) -> list[dict[str, str]]:
     yugioh_set_card_image_file_list: list[dict] = []
     card_list_obj_params = get_set_card_gallery_mediawiki_params(
         [ygo_set.yugipedia_set_card_gallery for ygo_set in split_list if isinstance(ygo_set, YugiohSet)])
+    set_dict = {
+        yugioh_set.yugipedia_set_card_gallery: yugioh_set for yugioh_set in yugioh_sets}
     try:
         res_json = run_wiki_request_until_response(
             MEDIAWIKI_URL, HEADERS, card_list_obj_params)
         if res_json:
             res_json_query_obj: dict[str, dict] = res_json["query"]["pages"]
             for set_card_gallery_page in res_json_query_obj.values():
-                yugioh_set_found: YugiohSet | None = next(
-                    (ygo_set for ygo_set in yugioh_sets if ygo_set.yugipedia_set_card_gallery == set_card_gallery_page['title']), None)
+                # yugioh_set_found: YugiohSet | None = next(
+                #     (ygo_set for ygo_set in yugioh_sets if ygo_set.yugipedia_set_card_gallery == set_card_gallery_page['title']), None)
+                yugioh_set_found: YugiohSet | None = set_dict.get(
+                    set_card_gallery_page['title'], None)
                 if isinstance(yugioh_set_found, YugiohSet):
                     if "images" in set_card_gallery_page.keys():
                         for image_file_item in set_card_gallery_page["images"]:
@@ -320,8 +306,10 @@ def get_yugioh_set_card_image_file(obj: dict) -> list[dict[str, str]]:
                             if check_is_yugioh_set_card and not is_official_proxy:
                                 list_obj = {}
                                 list_obj["image_file"] = image_file_item["title"]
-                                list_obj["set_name"] = yugioh_set_found.name if yugioh_set_found else None
+                                # list_obj["set_name"] = yugioh_set_found.name
                                 list_obj["yugioh_set"] = yugioh_set_found
+                                # list_obj['region'] = yugioh_set_found.region
+                                # list_obj['language'] = yugioh_set_found.language
                                 yugioh_set_card_image_file_list.append(
                                     list_obj.copy())
 
@@ -343,8 +331,10 @@ def get_yugioh_set_card_image_file(obj: dict) -> list[dict[str, str]]:
                                     if check_is_yugioh_set_card and not is_official_proxy:
                                         list_obj = {}
                                         list_obj["image_file"] = image_file_item["title"]
-                                        list_obj["set_name"] = yugioh_set_found.name if yugioh_set_found else None
+                                        # list_obj["set_name"] = yugioh_set_found.name
                                         list_obj["yugioh_set"] = yugioh_set_found
+                                        # list_obj['region'] = yugioh_set_found.region
+                                        list_obj['language'] = yugioh_set_found.language
                                         yugioh_set_card_image_file_list.append(
                                             list_obj.copy())
                 else:
@@ -357,7 +347,120 @@ def get_yugioh_set_card_image_file(obj: dict) -> list[dict[str, str]]:
     return yugioh_set_card_image_file_list
 
 
-def get_yugioh_set_card_code_from_set_list(obj) -> tuple[list[dict], list[YugiohSet]]:
+def get_yugioh_set_card_image_file_v2(split_yugioh_sets: List[YugiohSet],
+                                      yugioh_sets: List[YugiohSet],
+                                      yugioh_cards: List[YugiohCard],
+                                      yugioh_rarities: List[YugiohRarity]
+                                      ) -> tuple[list[dict[str, str | YugiohSet]], List[YugiohSetCard]]:
+    """_summary_
+
+    Parameters
+    ----------
+    obj : dict
+        _description_
+
+    Returns
+    -------
+    list[dict[str, str]]
+        _description_
+    """
+
+    yugioh_set_card_image_file_list: list[dict] = []
+    yugioh_set_cards: list[YugiohSetCard] = []
+    card_list_obj_params = get_set_card_gallery_mediawiki_params(
+        [ygo_set.yugipedia_set_card_gallery for ygo_set in split_yugioh_sets if isinstance(ygo_set, YugiohSet)])
+    set_dict = {
+        yugioh_set.yugipedia_set_card_gallery: yugioh_set for yugioh_set in yugioh_sets}
+    try:
+        res_json = run_wiki_request_until_response(
+            MEDIAWIKI_URL, HEADERS, card_list_obj_params)
+        if res_json:
+            res_json_query_obj: dict[str, dict] = res_json["query"]["pages"]
+            for set_card_gallery_page in res_json_query_obj.values():
+                yugioh_set_found: YugiohSet | None = set_dict.get(
+                    set_card_gallery_page['title'], None)
+                if isinstance(yugioh_set_found, YugiohSet):
+                    if "images" in set_card_gallery_page.keys():
+                        for image_file_item in set_card_gallery_page["images"]:
+                            (check_is_yugioh_set_card, is_official_proxy) = is_image_file_yugioh_set_card(
+                                image_file_item["title"])
+                            if check_is_yugioh_set_card and not is_official_proxy:
+                                yugioh_rarity_found = None
+                                yugioh_card_found = None
+                                yugioh_card_image_name, yugioh_set_code, yugioh_set_language, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art = get_split_data_from_image_file_v2(
+                                    image_file=image_file_item["title"])
+
+                                yugioh_card_found = next(
+                                    (ygo_card for ygo_card in yugioh_cards if ygo_card.card_image_name == yugioh_card_image_name), yugioh_card_found)
+                                yugioh_rarity_found = next(
+                                    (ygo_card for ygo_card in yugioh_rarities if ygo_card.prefix == yugioh_rarity_code), yugioh_rarity_found)
+
+                                list_obj = {}
+                                list_obj["image_file"] = image_file_item["title"]
+                                list_obj["yugioh_set"] = yugioh_set_found
+                                yugioh_set_card = YugiohSetCard(
+                                    yugioh_set=yugioh_set_found,
+                                    yugioh_card=yugioh_card_found,
+                                    yugioh_rarity=yugioh_rarity_found,
+                                    image_file=image_file_item["title"],
+                                    is_alternate_artwork=is_alternate_art
+                                )
+                                yugioh_set_card_image_file_list.append(
+                                    list_obj.copy())
+                                yugioh_set_cards.append(yugioh_set_card)
+
+            while "continue" in res_json:
+                card_list_obj_params["imcontinue"] = res_json["continue"]["imcontinue"]
+                res_json = run_wiki_request_until_response(
+                    MEDIAWIKI_URL, HEADERS, card_list_obj_params)
+                if res_json:
+                    res_json_query_obj: dict[str,
+                                             dict] = res_json["query"]["pages"]
+                    for set_card_gallery_page in res_json_query_obj.values():
+                        yugioh_set_found: YugiohSet | None = next(
+                            (ygo_set for ygo_set in yugioh_sets if ygo_set.yugipedia_set_card_gallery == set_card_gallery_page['title']), None)
+                        if isinstance(yugioh_set_found, YugiohSet):
+                            if "images" in set_card_gallery_page.keys():
+                                for image_file_item in set_card_gallery_page["images"]:
+                                    (check_is_yugioh_set_card, is_official_proxy) = is_image_file_yugioh_set_card(
+                                        image_file_item["title"])
+                                    if check_is_yugioh_set_card and not is_official_proxy:
+                                        yugioh_rarity_found = None
+                                        yugioh_card_found = None
+                                        yugioh_card_image_name, yugioh_set_code, yugioh_set_language, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art = get_split_data_from_image_file_v2(
+                                            image_file=image_file_item["title"])
+
+                                        yugioh_card_found = next(
+                                            (ygo_card for ygo_card in yugioh_cards if ygo_card.card_image_name == yugioh_card_image_name), yugioh_card_found)
+                                        yugioh_rarity_found = next(
+                                            (ygo_card for ygo_card in yugioh_rarities if ygo_card.prefix == yugioh_rarity_code), yugioh_rarity_found)
+
+                                        list_obj = {}
+                                        list_obj["image_file"] = image_file_item["title"]
+                                        list_obj["yugioh_set"] = yugioh_set_found
+                                        yugioh_set_card = YugiohSetCard(
+                                            yugioh_set=yugioh_set_found,
+                                            yugioh_card=yugioh_card_found,
+                                            yugioh_rarity=yugioh_rarity_found,
+                                            image_file=image_file_item["title"],
+                                            is_alternate_artwork=is_alternate_art
+                                        )
+                                        yugioh_set_card_image_file_list.append(
+                                            list_obj.copy())
+                                        yugioh_set_cards.append(
+                                            yugioh_set_card)
+
+                else:
+                    break
+
+    except Exception as e:
+        print(e.args)
+        pass
+
+    return yugioh_set_card_image_file_list, yugioh_set_cards
+
+
+def get_yugioh_set_card_code_from_set_list(obj) -> tuple[list[dict[str, str | YugiohSet | None]], list[YugiohSet]]:
     yugioh_sets: list[YugiohSet] = obj["yugioh_sets"]
     # yugioh_cards: list[YugiohCard] = obj["yugioh_cards"]
     yugioh_rarities: list[YugiohRarity] = obj["yugioh_rarities"]
@@ -377,16 +480,18 @@ def get_yugioh_set_card_code_from_set_list(obj) -> tuple[list[dict], list[Yugioh
             for set_card_list_page in res_json_query_obj.values():
                 yugioh_set_found = next(
                     (ygo_set for ygo_set in yugioh_sets if ygo_set.yugipedia_set_card_list == set_card_list_page['title']), None)
+
                 if "links" in set_card_list_page.keys():
                     for page_link_obj in set_card_list_page["links"]:
                         list_obj = {}
                         set_card_code_found, set_code_found = is_link_card_set_code(
                             page_link_obj["title"])
-                        if set_card_code_found is not None:
+                        if set_card_code_found is not None and yugioh_set_found is not None:
                             list_obj["set_card_code"] = page_link_obj["title"]
-                            list_obj["set_name"] = yugioh_set_found.name if yugioh_set_found else None
+                            # list_obj["set_name"] = yugioh_set_found.name
                             list_obj["yugioh_set"] = yugioh_set_found
                             list_obj['set_code'] = set_code_found
+                            # list_obj['region'] = yugioh_set_found.region
                             if page_link_obj['title'] in ['SSB1-JPS01', 'SSB1-JPS02', 'SSB1-JPS03', 'SSB1-JPS04', 'SSB1-JPS05', 'SSB1-JPS06']:
                                 list_obj['yugioh_rarity'] = next(
                                     (ygo_rarity for ygo_rarity in yugioh_rarities if ygo_rarity.prefix == "ScR"), None)
@@ -412,11 +517,12 @@ def get_yugioh_set_card_code_from_set_list(obj) -> tuple[list[dict], list[Yugioh
                                 list_obj = {}
                                 set_card_code_found, set_code_found = is_link_card_set_code(
                                     page_link_obj["title"])
-                                if set_card_code_found is not None:
+                                if set_card_code_found is not None and yugioh_set_found is not None:
                                     list_obj["set_card_code"] = page_link_obj["title"]
-                                    list_obj["set_name"] = yugioh_set_found.name if yugioh_set_found else None
+                                    # list_obj["set_name"] = yugioh_set_found.name
                                     list_obj["yugioh_set"] = yugioh_set_found
                                     list_obj['set_code'] = set_code_found
+                                    # list_obj['region'] = yugioh_set_found.region
                                     if page_link_obj['title'] in ['SSB1-JPS01', 'SSB1-JPS02', 'SSB1-JPS03', 'SSB1-JPS04', 'SSB1-JPS05', 'SSB1-JPS06']:
                                         list_obj['yugioh_rarity'] = next(
                                             (ygo_rarity for ygo_rarity in yugioh_rarities if ygo_rarity.prefix == "ScR"), None)
@@ -438,14 +544,14 @@ def get_yugioh_set_card_code_from_set_list(obj) -> tuple[list[dict], list[Yugioh
 
 
 def get_yugioh_set_card_name_from_set_card_code(obj):
-    # yugioh_sets: list[YugiohSet] = obj["yugioh_sets"]
     yugioh_cards: list[YugiohCard] = obj["yugioh_cards"]
-    # yugioh_rarities: list[YugiohRarity] = obj["yugioh_rarities"]
     split_list = obj["split_list"]
 
     yugioh_set_card_name_list: list[dict] = []
     params = get_card_names_from_card_set_codes_redirect_mediawiki_params(
         [split_list_item['set_card_code'] for split_list_item in split_list])
+    set_card_code_dict = {
+        split_list_item['set_card_code']: split_list_item for split_list_item in split_list}
     try:
         res_json = run_wiki_request_until_response(
             MEDIAWIKI_URL, HEADERS, params)
@@ -455,9 +561,8 @@ def get_yugioh_set_card_name_from_set_card_code(obj):
                 res_json_query_redirects_list = res_json["query"]["redirects"]
 
             for redirect_obj in res_json_query_redirects_list:
-                split_list_item_found: dict | None = next(
-                    (obj for obj in split_list if obj['set_card_code'] == redirect_obj['from']), None)
-
+                split_list_item_found = set_card_code_dict.get(
+                    redirect_obj['from'], None)
                 yugioh_card_found: YugiohCard | None = next(
                     (ygo_card for ygo_card in yugioh_cards if ygo_card.name == redirect_obj['to']), None)
                 if yugioh_card_found is not None and isinstance(split_list_item_found, dict):
@@ -473,14 +578,18 @@ def get_yugioh_set_card_name_from_set_card_code(obj):
 
 
 def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file(obj) -> list[dict]:
-    # yugioh_sets: list[YugiohSet] = obj["yugioh_sets"]
-    # yugioh_cards: list[YugiohCard] = obj["yugioh_cards"]
-    # yugioh_rarities: list[YugiohRarity] = obj["yugioh_rarities"]
-    split_list = obj["split_list"]
+    split_list: list[dict[str, str | YugiohSet]] = obj["split_list"]
 
     image_file_obj_list: list[dict] = []
+    image_file_strings: list[str] = [str(image_file_obj.get('image_file', ""))
+                                     for image_file_obj in split_list]
+
     card_list_obj_params = get_page_images_from_image_file_mediawiki_params(
-        [image_card_url_obj['image_file'] for image_card_url_obj in split_list])
+        image_file_strings)
+
+    set_dict = {
+        obj.get("image_file", ""): obj.get('yugioh_set') for obj in split_list if obj.get('yugioh_set') is not None}
+
     try:
         res_json = run_wiki_request_until_response(
             MEDIAWIKI_URL, HEADERS, card_list_obj_params)
@@ -522,8 +631,59 @@ def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file(obj) -> list[d
     return image_file_obj_list
 
 
+def get_yugioh_set_card_image_url_from_yugioh_set_card_image_file_v2(yugioh_set_cards: List[YugiohSetCard]) -> List[YugiohSetCard]:
+    yugioh_set_cards_updated: List[YugiohSetCard] = []
+    image_file_obj_list: list[dict] = []
+    image_file_strings: list[str] = [
+        ygo_set_card.image_file for ygo_set_card in yugioh_set_cards if ygo_set_card.image_file is not None]
+    card_list_obj_params = get_page_images_from_image_file_mediawiki_params(
+        image_file_strings)
+
+    set_dict_v2 = {
+        ygo_set_card.image_file: ygo_set_card for ygo_set_card in yugioh_set_cards if ygo_set_card.image_file is not None}
+
+    try:
+        res_json = run_wiki_request_until_response(
+            MEDIAWIKI_URL, HEADERS, card_list_obj_params)
+        if res_json:
+            res_json_query_obj: dict[str, dict] = res_json["query"]["pages"]
+            res_json_query_obj = {
+                key: value for key, value in res_json_query_obj.items() if int(key) >= 0}
+            for page_image_obj in res_json_query_obj.values():
+                yugioh_set_card_found = set_dict_v2.get(
+                    page_image_obj['title'])
+                if yugioh_set_card_found is not None:
+                    if "original" in page_image_obj.keys():
+                        yugioh_set_card_found.image_url = page_image_obj['original']['source']
+                    yugioh_set_cards_updated.append(yugioh_set_card_found)
+            while "continue" in res_json:
+                card_list_obj_params["picontinue"] = res_json["continue"]["picontinue"]
+                res_json = run_wiki_request_until_response(
+                    MEDIAWIKI_URL, HEADERS, card_list_obj_params)
+                if res_json:
+                    res_json_query_obj = res_json["query"]["pages"]
+                    res_json_query_obj = {
+                        key: value for key, value in res_json_query_obj.items() if int(key) >= 0}
+                    for page_image_obj in res_json_query_obj.values():
+                        yugioh_set_card_found = set_dict_v2.get(
+                            page_image_obj['title'])
+                        if yugioh_set_card_found is not None:
+                            if "original" in page_image_obj.keys():
+                                yugioh_set_card_found.image_url = page_image_obj['original']['source']
+                            yugioh_set_cards_updated.append(
+                                yugioh_set_card_found)
+                else:
+                    break
+
+    except Exception as e:
+        print(e.args)
+        pass
+
+    return yugioh_set_cards_updated
+
+
 def get_yugioh_set_card_relationship_if_available_from_yugioh_set_card_image_file(obj) -> tuple[list[dict], list[dict]]:
-    # yugioh_sets: list[YugiohSet] = obj["yugioh_sets"]
+    yugioh_sets: list[YugiohSet] = obj["yugioh_sets"]
     yugioh_cards: list[YugiohCard] = obj["yugioh_cards"]
     yugioh_rarities: list[YugiohRarity] = obj["yugioh_rarities"]
     split_list = obj["split_list"]
@@ -543,8 +703,6 @@ def get_yugioh_set_card_relationship_if_available_from_yugioh_set_card_image_fil
             for page_image_obj in res_json_query_obj.values():
                 image_file_found: dict | None = next(
                     (image_file_obj for image_file_obj in split_list if image_file_obj['image_file'] == page_image_obj['title']), None)
-                # if image_file_found['image_file'] == "File:VoidFeast-TW01-JP-ScR.png":
-                #     print("i am here")
                 if image_file_found is not None:
                     if 'links' in page_image_obj.keys():
                         yugioh_card_found: YugiohCard | None = None
@@ -556,9 +714,6 @@ def get_yugioh_set_card_relationship_if_available_from_yugioh_set_card_image_fil
                                 (ygo_card for ygo_card in yugioh_cards if ygo_card.name == link_obj_text), yugioh_card_found)
                             yugioh_rarity_found = next(
                                 (ygo_rarity for ygo_rarity in yugioh_rarities if ygo_rarity.name == link_obj_text), yugioh_rarity_found)
-                            # yugioh_set_found = next(
-                            #     (ygo_set for ygo_set in yugioh_sets if ygo_set.name == link_obj_text), yugioh_set_found)
-
                         # image_file_found['yugioh_set'] = yugioh_set_found
                         image_file_found['yugioh_rarity'] = yugioh_rarity_found
                         image_file_found['yugioh_card'] = yugioh_card_found
@@ -619,6 +774,7 @@ def get_yugioh_set_card_relationship_if_available_from_yugioh_set_card_image_fil
 
 
 def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
+    yugioh_set_cards_v2: List[YugiohSetCard] = []
     yugioh_set_objs_from_db = retrieve_data_from_db_to_df(
         TABLE_YUGIOH_SETS, db_name='yugioh_data').to_dict(orient='records')
     yugioh_rarity_objs_from_db = retrieve_data_from_db_to_df(
@@ -645,42 +801,32 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
     yugioh_set_cards: list[YugiohSetCard] = []
-    yugioh_set_card_image_file_overall_list: list[dict[str, str | None]] = []
+    yugioh_set_card_image_file_overall_list: list[dict[str, str | YugiohSet | None]] = [
+    ]
     yugioh_set_card_image_file_overall_list_with_image_urls: list[dict] = []
-    yugioh_set_card_code_overall_list: list[dict[str, str]] = []
+    yugioh_set_card_code_overall_list: list[dict[str, str | YugiohSet]] = []
     yugioh_set_with_missing_links_overall_list: list[YugiohSet] = []
     yugioh_set_card_code_overall_list_with_card_names: list[dict] = []
 
     # 1. get image_url out
     with ThreadPoolExecutor() as executor:  # optimally defined number of threads
         futures = []
-        for split_list in yugioh_set_split_list:
-            overall_obj["split_list"] = split_list
+        for yugioh_set_sublist in yugioh_set_split_list:
             futures.append(executor.submit(
-                get_yugioh_set_card_image_file, overall_obj.copy()))
+                get_yugioh_set_card_image_file_v2, yugioh_set_sublist, yugioh_sets, yugioh_cards, yugioh_rarities))
 
         for future in concurrent.futures.as_completed(futures):
-            yugioh_set_card_image_file_overall_list.extend(future.result())
-
-            # result = get_yugioh_set_card_image_file(
-            #     overall_obj.copy())
-
-            # yugioh_set_card_image_file_overall_list.extend(result)
+            result1, result2 = future.result()
+            yugioh_set_card_image_file_overall_list.extend(result1)
+            yugioh_set_cards_v2.extend(result2)
 
         print("Total image_card_url_overall_list items:{overall_list_count}".format(
             overall_list_count=len(yugioh_set_card_image_file_overall_list)))
 
-    # file_path = "./output/temp_yugioh_set_cards_1.json"
-    # with open(file_path, "w") as json_file:
-    #     temp_yugioh_set_card_image_file_overall_list = [
-    #         obj.copy() for obj in yugioh_set_card_image_file_overall_list]
-    #     for obj in temp_yugioh_set_card_image_file_overall_list:
-    #         del obj['yugioh_set']
-    #     json.dump(
-    #         temp_yugioh_set_card_image_file_overall_list, json_file)
-
-    yugioh_set_card_image_file_overall_split_list: list[list[dict]] = list(
-        split(yugioh_set_card_image_file_overall_list, 10))
+    yugioh_set_card_image_file_overall_split_list: list[list[dict[str, str | YugiohSet | None]]] = list(
+        split(yugioh_set_card_image_file_overall_list, 25))
+    yugioh_set_cards_v2_split_list = list(
+        split(yugioh_set_cards_v2, 25))
 
     # 2. from image_file to get image_url
     with ThreadPoolExecutor() as executor:  # optimally defined number of threads
@@ -691,62 +837,22 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
                 get_yugioh_set_card_image_url_from_yugioh_set_card_image_file, overall_obj.copy()))
 
         for future in concurrent.futures.as_completed(futures):
-            result = future.result()
-            if result is not None:
+            result1 = future.result()
+            if result1 is not None:
                 yugioh_set_card_image_file_overall_list_with_image_urls.extend(
-                    result)
+                    result1)
 
-            # result: list[dict] = get_yugioh_set_cards_from_image_card_url_v2(
-            #     overall_obj.copy())
-            # yugioh_set_card_image_file_overall_list_with_image_urls.extend(
-            #     result)
         print("Total yugioh_set_card_image_file_overall_list_with_image_urls items:{overall_list_count}".format(
             overall_list_count=len(yugioh_set_card_image_file_overall_list_with_image_urls)))
-
-    # yugioh_set_card_image_file_and_image_url_overall_split_list: list[list[dict]] = list(
-    #     split(yugioh_set_card_image_file_overall_list_with_image_urls, 50))
 
     yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list: list[dict] = [
     ]
 
-    # file_path = "./output/temp_yugioh_set_cards_2.json"
-    # with open(file_path, "w") as json_file:
-    #     temp_yugioh_set_card_image_file_overall_list_with_image_urls = [
-    #         obj.copy() for obj in yugioh_set_card_image_file_overall_list_with_image_urls]
-    #     for obj in temp_yugioh_set_card_image_file_overall_list_with_image_urls:
-    #         if 'yugioh_set' in obj.keys():
-    #             del obj['yugioh_set']
-    #     json.dump(
-    #         temp_yugioh_set_card_image_file_overall_list_with_image_urls, json_file)
-
-    yugioh_set_card_image_file_overall_list_updated: list[dict] = []
-
-    for obj in yugioh_set_card_image_file_overall_list:
-        obj_updated = obj.copy()
-        obj_found = next(
-            (image_file_obj for image_file_obj in yugioh_set_card_image_file_overall_list_with_image_urls
-             if image_file_obj['image_file'] == obj_updated['image_file'] and
-             'image_url' in image_file_obj.keys()),
-            None)
-
-        obj_updated['image_url'] = obj_found['image_url'] if obj_found is not None else None
-        obj_updated['image_name'] = obj_found['image_name'] if obj_found is not None else None
-
-        yugioh_set_card_image_file_overall_list_updated.append(
-            obj_updated.copy())
-
-    # file_path = "./output/temp_yugioh_set_cards_3.json"
-    # with open(file_path, "w") as json_file:
-    #     temp_yugioh_set_card_image_file_overall_list_updated = [
-    #         obj.copy() for obj in yugioh_set_card_image_file_overall_list_updated]
-    #     for obj in temp_yugioh_set_card_image_file_overall_list_updated:
-    #         if 'yugioh_set' in obj.keys():
-    #             del obj['yugioh_set']
-    #     json.dump(
-    #         temp_yugioh_set_card_image_file_overall_list_updated, json_file)
+    # reset  yugioh_set_card_image_file_overall_list_with_image_urls
+    yugioh_set_card_relationship_overall_list: list[dict] = []
 
     yugioh_set_card_image_file_and_image_url_overall_split_list: list[list[dict]] = list(
-        split(yugioh_set_card_image_file_overall_list_updated, 3))
+        split(yugioh_set_card_image_file_overall_list, 3))
 
     # reset  yugioh_set_card_image_file_overall_list_with_image_urls
     yugioh_set_card_relationship_overall_list: list[dict] = []
@@ -769,51 +875,6 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
         print("Total yugioh_set_card_image_file_overall_list_with_image_urls items:{overall_list_count}".format(
             overall_list_count=len(yugioh_set_card_relationship_overall_list)))
 
-    yugioh_set_card_image_file_overall_list_updated_2: list[dict] = []
-
-    for obj in yugioh_set_card_image_file_overall_list_updated:
-        obj_updated = obj.copy()
-        obj_found = next(
-            (image_file_obj for image_file_obj in yugioh_set_card_relationship_overall_list
-             if image_file_obj['image_file'] == obj_updated['image_file'] and
-             'image_url' in image_file_obj.keys()),
-            None)
-
-        # obj_updated['yugioh_set'] = obj_found['yugioh_set'] if obj_found is not None else None
-        obj_updated['yugioh_card'] = obj_found['yugioh_card'] if obj_found is not None else None
-        obj_updated['yugioh_rarity'] = obj_found['yugioh_rarity'] if obj_found is not None else None
-
-        yugioh_set_card_image_file_overall_list_updated_2.append(
-            obj_updated.copy())
-
-    # file_path = "./output/temp_yugioh_set_cards_3_1.json"
-    # with open(file_path, "w") as json_file:
-    #     temp_yugioh_set_card_image_file_overall_list_updated_2 = [
-    #         obj.copy() for obj in yugioh_set_card_image_file_overall_list_updated_2]
-    #     for obj in temp_yugioh_set_card_image_file_overall_list_updated_2:
-    #         if 'yugioh_set' in obj.keys():
-    #             obj['yugioh_set_name2'] = obj['yugioh_set'].name if obj['yugioh_set'] and isinstance(
-    #                 obj['yugioh_set'], YugiohSet) else None
-    #             del obj['yugioh_set']
-    #         else:
-    #             obj['yugioh_set_name2'] = None
-
-    #         if 'yugioh_card' in obj.keys():
-    #             obj['yugioh_card_name2'] = obj['yugioh_card'].name if obj['yugioh_card'] and isinstance(
-    #                 obj['yugioh_card'], YugiohCard) else None
-    #             del obj['yugioh_card']
-    #         else:
-    #             obj['yugioh_card_name2'] = None
-
-    #         if 'yugioh_rarity' in obj.keys():
-    #             obj['yugioh_rarity_name2'] = obj['yugioh_rarity'].name if obj['yugioh_rarity'] and isinstance(
-    #                 obj['yugioh_rarity'], YugiohRarity) else None
-    #             del obj['yugioh_rarity']
-    #         else:
-    #             obj['yugioh_rarity_name2'] = None
-    #     json.dump(
-    #         temp_yugioh_set_card_image_file_overall_list_updated_2, json_file)
-
     # 4. get from card_set_gallery to set_card_code list
     yugioh_set_split_list = list(split(yugioh_sets, 1))
     with ThreadPoolExecutor() as executor:  # optimally defined number of threads
@@ -829,40 +890,9 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
             yugioh_set_card_code_overall_list.extend(yugioh_set_card_code_list)
             yugioh_set_with_missing_links_overall_list.extend(
                 yugioh_set_with_missing_links)
-            # yugioh_set_card_code_list, yugioh_set_with_missing_links = get_yugioh_set_card_code_from_set_list(
-            #     overall_obj.copy())
-            # yugioh_set_card_code_overall_list.extend(yugioh_set_card_code_list)
-            # yugioh_set_with_missing_links_overall_list.extend(
-            #     yugioh_set_with_missing_links)
 
         print("Total yugioh_set_card_code_overall_list items:{overall_list_count}".format(
             overall_list_count=len(yugioh_set_card_code_overall_list)))
-
-    # file_path = "./output/temp_yugioh_set_cards_4_1.json"
-    # with open(file_path, "w") as json_file:
-    #     temp_yugioh_set_card_code_overall_list = [
-    #         obj.copy() for obj in yugioh_set_card_code_overall_list]
-    #     for obj in temp_yugioh_set_card_code_overall_list:
-    #         if 'yugioh_set' in obj.keys():
-    #             obj['yugioh_set_name2'] = obj['yugioh_set'].name if obj['yugioh_set'] and isinstance(
-    #                 obj['yugioh_set'], YugiohSet) else None
-    #             del obj['yugioh_set']
-    #         else:
-    #             obj['yugioh_set_name2'] = None
-    #         if 'yugioh_card' in obj.keys():
-    #             obj['yugioh_card_name2'] = obj['yugioh_card'].name if obj['yugioh_card'] and isinstance(
-    #                 obj['yugioh_card'], YugiohCard) else None
-    #             del obj['yugioh_card']
-    #         else:
-    #             obj['yugioh_card_name2'] = None
-    #         if 'yugioh_rarity' in obj.keys():
-    #             obj['yugioh_rarity_name2'] = obj['yugioh_rarity'].name if obj['yugioh_rarity'] and isinstance(
-    #                 obj['yugioh_rarity'], YugiohRarity) else None
-    #             del obj['yugioh_rarity']
-    #         else:
-    #             obj['yugioh_rarity_name2'] = None
-    #     json.dump(
-    #         temp_yugioh_set_card_code_overall_list, json_file)
 
     yugioh_set_card_code_overall_split_list = list(
         split(yugioh_set_card_code_overall_list, 10))
@@ -878,57 +908,28 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
             yugioh_set_card_code_overall_list_with_card_names.extend(
                 future.result())
 
-            # result = get_yugioh_set_card_name_from_set_card_code_v2(
-            #     overall_obj.copy())
-            # yugioh_set_card_code_overall_list_with_card_names.extend(result)
-
         print("Total yugioh_set_card_code_overall_list_with_card_names items:{overall_list_count}".format(
             overall_list_count=len(yugioh_set_card_code_overall_list_with_card_names)))
 
-    file_path = "./output/temp_yugioh_set_cards_5_1.json"
-    with open(file_path, "w") as json_file:
-        temp_yugioh_set_card_code_overall_list_with_card_names = [
-            obj.copy() for obj in yugioh_set_card_code_overall_list_with_card_names]
-        for obj in temp_yugioh_set_card_code_overall_list_with_card_names:
-            if 'yugioh_set' in obj.keys():
-                obj['yugioh_set_name2'] = obj['yugioh_set'].name if obj['yugioh_set'] and isinstance(
-                    obj['yugioh_set'], YugiohSet) else None
-                del obj['yugioh_set']
-            else:
-                obj['yugioh_set_name2'] = None
-            if 'yugioh_card' in obj.keys():
-                obj['yugioh_card_name2'] = obj['yugioh_card'].name if obj['yugioh_card'] and isinstance(
-                    obj['yugioh_card'], YugiohCard) else None
-                del obj['yugioh_card']
-            else:
-                obj['yugioh_card_name2'] = None
-            if 'yugioh_rarity' in obj.keys():
-                obj['yugioh_rarity_name2'] = obj['yugioh_rarity'].name if obj['yugioh_rarity'] and isinstance(
-                    obj['yugioh_rarity'], YugiohRarity) else None
-                del obj['yugioh_rarity']
-            else:
-                obj['yugioh_rarity_name2'] = None
-        json.dump(
-            temp_yugioh_set_card_code_overall_list_with_card_names, json_file)
-
     # 6. fill in missing card and rarity
-    yugioh_set_card_image_file_overall_list_updated_2_filtered = [obj for obj in yugioh_set_card_image_file_overall_list_updated_2
-                                                                  if obj['yugioh_rarity'] is None or obj['yugioh_card'] is None]
-    # yugioh_set_card_image_file_overall_list_updated_2_filtered_with_card_and_rarity = [obj for obj in yugioh_set_card_image_file_overall_list_updated_2
-    #                                                                                    if obj['yugioh_rarity'] and obj['yugioh_card']]
-    yugioh_set_card_image_file_overall_list_updated_2_filtered_split_list = list(
-        split(yugioh_set_card_image_file_overall_list_updated_2_filtered, 500))
+    # find missing card and rarity for objects that to date did not fill in all objects
+    # up to this stage all is correct. ###################
+    yugioh_set_card_image_file_overall_list_updated_2_missing = [obj for obj in yugioh_set_card_image_file_overall_list
+                                                                 if obj.get('yugioh_rarity', None) is None or obj.get('yugioh_card', None) is None]
+
+    yugioh_set_card_image_file_overall_list_updated_2_missing_split_list = list(
+        split(yugioh_set_card_image_file_overall_list_updated_2_missing, 500))
 
     yugioh_set_cards: list[YugiohSetCard] = []
     yugioh_set_card_dict_list_found_from_missing_cards_and_rarity: list[dict] = [
     ]
     with ThreadPoolExecutor() as executor:  # optimally defined number of threads
         futures = []
-        for split_list in yugioh_set_card_image_file_overall_list_updated_2_filtered_split_list:
+        for split_list in yugioh_set_card_image_file_overall_list_updated_2_missing_split_list:
             overall_obj["yugioh_set_card_image_file_overall_list_with_image_urls"] = split_list
             overall_obj['yugioh_set_card_code_overall_list_with_card_names'] = yugioh_set_card_code_overall_list_with_card_names
             futures.append(executor.submit(
-                get_yugioh_set_cards_from_information_obj_v2, overall_obj.copy()))
+                get_yugioh_set_cards_from_information_obj_for_missing_links, overall_obj.copy()))
         for future in concurrent.futures.as_completed(futures):
             yugioh_set_card_dict_list_found_from_missing_cards_and_rarity.extend(
                 future.result())
@@ -938,9 +939,9 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
 
     # 6.2 update yugioh_set_card_image_file_overall_list_updated_2_filtered with missing information
     yugioh_set_card_image_file_overall_list_updated_3: list[dict] = []
-    for dict_obj in yugioh_set_card_image_file_overall_list_updated_2:
+    for dict_obj in yugioh_set_card_image_file_overall_list:
         dict_obj_updated = dict_obj.copy()
-        if dict_obj_updated['yugioh_card'] is None or dict_obj_updated['yugioh_rarity'] is None:
+        if dict_obj_updated.get('yugioh_card', None) is None or dict_obj_updated.get("yugioh_rarity", None) is None:
             updated_dict_obj_from_step_6 = next(
                 (obj for obj in yugioh_set_card_dict_list_found_from_missing_cards_and_rarity if obj['image_file'] == dict_obj_updated['image_file']), None)
             if updated_dict_obj_from_step_6 is not None:
@@ -971,8 +972,138 @@ def get_yugioh_set_cards() -> tuple[list[YugiohSetCard], list[dict]]:
     return yugioh_set_cards, yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list
 
 
-def get_yugioh_set_cards_from_information_obj_v2(overall_obj: dict) -> list[dict]:
-    # yugioh_sets: list[YugiohSet] = overall_obj["yugioh_sets"]
+def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
+    yugioh_set_cards_v2: List[YugiohSetCard] = []
+    yugioh_set_cards_v2_step2: List[YugiohSetCard] = []
+    yugioh_set_cards_v2_overall: List[YugiohSetCard] = []
+    yugioh_set_objs_from_db = retrieve_data_from_db_to_df(
+        TABLE_YUGIOH_SETS, db_name='yugioh_data').to_dict(orient='records')
+    yugioh_rarity_objs_from_db = retrieve_data_from_db_to_df(
+        TABLE_YUGIOH_RARITIES, db_name='yugioh_data').to_dict(orient='records')
+    yugioh_card_objs_from_db = retrieve_data_from_db_to_df(
+        TABLE_YUGIOH_CARDS, db_name='yugioh_data').to_dict(orient='records')
+
+    yugioh_sets: list[YugiohSet] = [YugiohSet.get_yugioh_set_from_db_obj(
+        yugioh_set_obj) for yugioh_set_obj in yugioh_set_objs_from_db]
+    yugioh_rarities: list[YugiohRarity] = [YugiohRarity.get_yugioh_rarity_from_db_obj(
+        yugioh_rarity_obj) for yugioh_rarity_obj in yugioh_rarity_objs_from_db]
+    yugioh_cards: list[YugiohCard] = [YugiohCard.get_yugioh_card_from_db_obj(
+        yugioh_card_obj) for yugioh_card_obj in yugioh_card_objs_from_db]
+
+    # to remove after testing
+    # yugioh_sets = [
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["EP15", "ADDR", "AGOV"]]
+
+    yugioh_set_split_list = list(split(yugioh_sets, 1))
+
+    yugioh_set_card_image_file_overall_list: list[dict[str, str | YugiohSet | None]] = [
+    ]
+
+    # 1. get image_url out
+    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
+        futures = []
+        for yugioh_set_sublist in yugioh_set_split_list:
+            futures.append(executor.submit(
+                get_yugioh_set_card_image_file_v2, yugioh_set_sublist, yugioh_sets, yugioh_cards, yugioh_rarities))
+
+        for future in concurrent.futures.as_completed(futures):
+            result1, result2 = future.result()
+            yugioh_set_card_image_file_overall_list.extend(result1)
+            yugioh_set_cards_v2.extend(result2)
+
+        print("Total image_card_url_overall_list items:{overall_list_count}".format(
+            overall_list_count=len(yugioh_set_card_image_file_overall_list)))
+
+    yugioh_set_cards_v2_split_list = list(
+        split(yugioh_set_cards_v2, 25))
+
+    # 2. from image_file to get image_url
+    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
+        futures = []
+        for split_list in yugioh_set_cards_v2_split_list:
+            futures.append(executor.submit(
+                get_yugioh_set_card_image_url_from_yugioh_set_card_image_file_v2, split_list))
+
+        for future in concurrent.futures.as_completed(futures):
+            result1 = future.result()
+            if result1 is not None:
+                yugioh_set_cards_v2_step2.extend(
+                    result1)
+
+        print("Total yugioh_set_cards_v2_step2 items:{overall_list_count}".format(
+            overall_list_count=len(yugioh_set_cards_v2_step2)))
+    # 3. get yugioh_set_card_from_set_card_codes
+    yugioh_set_cards_v2_from_set_card_lists: List[YugiohSetCard] = []
+
+    with ThreadPoolExecutor() as executor:  # optimally defined number of threads
+        futures = []
+        for split_list in yugioh_set_split_list:
+            futures.append(executor.submit(
+                get_yugioh_set_cards_from_set_card_list_names, split_list, yugioh_sets, yugioh_cards, yugioh_rarities))
+
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            yugioh_set_cards_v2_from_set_card_lists.extend(result)
+
+        print("Total yugioh_set_cards_from_set_card_lists items:{overall_list_count}".format(
+            overall_list_count=len(yugioh_set_cards_v2_from_set_card_lists)))
+    print("i am almost done")
+    yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list: list[dict] = [
+    ]
+
+    yugioh_set_cards_v2_overall = consolidate_yugioh_set_cards(
+        yugioh_set_cards_with_images=yugioh_set_cards_v2,
+        yugioh_set_cards_with_codes=yugioh_set_cards_v2_from_set_card_lists
+    )
+
+    return yugioh_set_cards_v2_overall, yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list
+
+
+def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCard],
+                                 yugioh_set_cards_with_codes: List[YugiohSetCard]):
+    yugioh_set_cards_final: List[YugiohSetCard] = []
+    ygo_set_card_with_code_dict = {
+        "{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
+                                                      card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
+                                                      rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
+    }
+    for ygo_set_card_image in yugioh_set_cards_with_images:
+        # ygo_set_card_with_code_found = next(
+        #     (ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
+        #      if ygo_set_card_image.card == ygo_set_card.card and
+        #      ygo_set_card_image.set == ygo_set_card.set and
+        #      ygo_set_card_image.rarity == ygo_set_card.rarity), None
+        # )
+        ygo_set_card_with_code_found = ygo_set_card_with_code_dict.get("{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card_image.set.name if ygo_set_card_image.set is not None else "",
+                                                                                                                     card_name=ygo_set_card_image.card.name if ygo_set_card_image.card is not None else "",
+                                                                                                                     rarity_name=ygo_set_card_image.rarity.name if ygo_set_card_image.rarity is not None else ""), None)
+        if ygo_set_card_with_code_found is not None:
+            ygo_set_card_image.code = ygo_set_card_with_code_found.code
+        yugioh_set_cards_final.append(ygo_set_card_image)
+
+    ygo_set_card_final_dict = {
+        "{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
+                                                      card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
+                                                      rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_final
+    }
+    for ygo_set_card_with_code in yugioh_set_cards_with_codes:
+        # ygo_set_card_with_image_found = next(
+        #     (ygo_set_card for ygo_set_card in yugioh_set_cards_final
+        #      if ygo_set_card_with_code.card.name == ygo_set_card.card.name and  # type: ignore
+        #      ygo_set_card_with_code.set.name == ygo_set_card.set.name and  # type: ignore
+        #      ygo_set_card_with_code.rarity.name == ygo_set_card.rarity.name), None  # type: ignore
+        # )
+        ygo_set_card_with_image_found = ygo_set_card_final_dict.get("{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card_with_code.set.name if ygo_set_card_with_code.set is not None else "",
+                                                                                                                  card_name=ygo_set_card_with_code.card.name if ygo_set_card_with_code.card is not None else "",
+                                                                                                                  rarity_name=ygo_set_card_with_code.rarity.name if ygo_set_card_with_code.rarity is not None else ""), None)
+
+        if ygo_set_card_with_image_found is None:
+            yugioh_set_cards_final.append(ygo_set_card_with_code)
+    return yugioh_set_cards_final
+
+
+def get_yugioh_set_cards_from_information_obj_for_missing_links(overall_obj: dict) -> list[dict]:
+    yugioh_sets: List[YugiohSet] = overall_obj['yugioh_sets']
     yugioh_cards: list[YugiohCard] = overall_obj["yugioh_cards"]
     yugioh_rarities: list[YugiohRarity] = overall_obj["yugioh_rarities"]
     yugioh_set_card_image_file_overall_list_with_image_urls: list[
@@ -983,11 +1114,14 @@ def get_yugioh_set_cards_from_information_obj_v2(overall_obj: dict) -> list[dict
     yugioh_set_card_dict_list: list[dict] = []
     for image_url_obj in yugioh_set_card_image_file_overall_list_with_image_urls:
         image_url_obj_updated = image_url_obj.copy()
-        # yugioh_set_found: YugiohSet | None = image_url_obj_updated['yugioh_set']
-        yugioh_card_found: YugiohCard | None = image_url_obj_updated['yugioh_card']
-        yugioh_rarity_found: YugiohRarity | None = image_url_obj_updated['yugioh_rarity']
-
-        yugioh_card_image_name, yugioh_set_code, yugioh_set_region, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art = get_split_data_from_image_file_v2(
+        yugioh_set_found: YugiohSet | None = image_url_obj_updated.get(
+            'yugioh_set', None)
+        yugioh_card_found: YugiohCard | None = image_url_obj_updated.get(
+            'yugioh_card', None)
+        yugioh_rarity_found: YugiohRarity | None = image_url_obj_updated.get(
+            'yugioh_rarity', None)
+        yugioh_set_found: YugiohSet | None = image_url_obj_updated['yugioh_set']
+        yugioh_card_image_name, yugioh_set_code, yugioh_set_language, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art = get_split_data_from_image_file_v2(
             image_file=image_url_obj_updated['image_file'])
         if yugioh_card_found is None:
             yugioh_card_found = next(
@@ -995,6 +1129,9 @@ def get_yugioh_set_cards_from_information_obj_v2(overall_obj: dict) -> list[dict
         if yugioh_rarity_found is None:
             yugioh_rarity_found = next(
                 (ygo_card for ygo_card in yugioh_rarities if ygo_card.prefix == yugioh_rarity_code), yugioh_rarity_found)
+        # make sure i use the right yugioh_set
+        yugioh_set_found = next(
+            (ygo_set for ygo_set in yugioh_sets if ygo_set.set_code == yugioh_set_code and ygo_set.language == yugioh_set_language), yugioh_set_found)
 
         # there are cards with alternate passwords so the card_image_name will be the same
         # use this filter to find if it is either 1 of the two then only select the 1 that exists in the overall_set_card_code_list
@@ -1022,15 +1159,16 @@ def get_yugioh_set_cards_from_information_obj_v2(overall_obj: dict) -> list[dict
         # image_url_obj_updated['yugioh_set'] = yugioh_set_found
         image_url_obj_updated['yugioh_card'] = yugioh_card_found
         image_url_obj_updated['yugioh_rarity'] = yugioh_rarity_found
+        image_url_obj_updated['yugioh_set'] = yugioh_set_found
         yugioh_set_card_dict_list.append(image_url_obj_updated.copy())
 
     return yugioh_set_card_dict_list
 
 
 def get_yugioh_set_cards_from_consolidated_list(overall_obj: dict) -> list[YugiohSetCard]:
-    # yugioh_sets: list[YugiohSet] = overall_obj["yugioh_sets"]
+    yugioh_sets: list[YugiohSet] = overall_obj["yugioh_sets"]
     yugioh_cards: list[YugiohCard] = overall_obj["yugioh_cards"]
-    # yugioh_rarities: list[YugiohRarity] = overall_obj["yugioh_rarities"]
+    yugioh_rarities: list[YugiohRarity] = overall_obj["yugioh_rarities"]
     yugioh_set_card_image_file_overall_list_with_image_urls: list[
         dict] = overall_obj['yugioh_set_card_image_file_overall_list_with_image_urls']
     yugioh_set_card_code_overall_list_with_card_names: list[dict] = overall_obj[
@@ -1038,14 +1176,18 @@ def get_yugioh_set_cards_from_consolidated_list(overall_obj: dict) -> list[Yugio
 
     yugioh_set_cards: list[YugiohSetCard] = []
     yugioh_set_card_dict_list: list[dict] = []
+    # replace from yugioh_set_card_image_file_overall_list_with_image_urls to yugioh_set_card_code_overall_list_with_card_names
     for dict_obj in yugioh_set_card_image_file_overall_list_with_image_urls:
         dict_obj_updated = dict_obj.copy()
         yugioh_set_card_code_found: str | None = None
-        yugioh_set_found: YugiohSet | None = dict_obj_updated['yugioh_set']
-        yugioh_card_found: YugiohCard | None = dict_obj_updated['yugioh_card']
-        yugioh_rarity_found: YugiohRarity | None = dict_obj_updated['yugioh_rarity']
+        yugioh_set_found: YugiohSet | None = dict_obj_updated.get(
+            'yugioh_set', None)
+        yugioh_card_found: YugiohCard | None = dict_obj_updated.get(
+            'yugioh_card', None)
+        yugioh_rarity_found: YugiohRarity | None = dict_obj_updated.get(
+            'yugioh_rarity', None)
 
-        yugioh_card_image_name, yugioh_set_code, yugioh_set_region, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art = get_split_data_from_image_file_v2(
+        yugioh_card_image_name, yugioh_set_code, yugioh_set_language, yugioh_rarity_code, alternate_art_code, file_extension, is_alternate_art = get_split_data_from_image_file_v2(
             image_file=dict_obj_updated['image_file'])
 
         # there are cards with alternate passwords so the card_image_name will be the same
@@ -1073,15 +1215,22 @@ def get_yugioh_set_cards_from_consolidated_list(overall_obj: dict) -> list[Yugio
                     yugioh_rarity_found = obj_found['yugioh_rarity']
 
         yugioh_set_card_dict_list.append(dict_obj_updated)
+
+        is_image_file_language_same_as_set_language = yugioh_set_found.language == yugioh_set_language if isinstance(
+            yugioh_set_found, YugiohSet) else False
+
         if isinstance(yugioh_card_found, YugiohCard) and isinstance(yugioh_set_found, YugiohSet) and isinstance(yugioh_rarity_found, YugiohRarity) and isinstance(is_alternate_art, bool):
             yugioh_set_card = YugiohSetCard(
                 yugioh_set=yugioh_set_found,
                 yugioh_card=yugioh_card_found,
                 yugioh_rarity=yugioh_rarity_found,
                 code=yugioh_set_card_code_found,
-                image_url=dict_obj_updated['image_url'],
-                image_file=dict_obj_updated['image_file'],
-                is_alternate_artwork=is_alternate_art
+                image_url=dict_obj_updated.get(
+                    'image_url', None) if is_image_file_language_same_as_set_language else None,
+                image_file=dict_obj_updated.get(
+                    'image_file', None) if is_image_file_language_same_as_set_language else None,
+                is_alternate_artwork=is_alternate_art,
+
             )
             yugioh_set_cards.append(yugioh_set_card)
 

@@ -1,10 +1,7 @@
 import pandas as pd
 import datetime
-import os
-import sys
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 import logging
-import pymysql
 import requests
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
@@ -13,25 +10,7 @@ import csv
 from .tcgcorner_scraper import get_card_prices
 from ..utilities.aws_utilities import retrieve_data_from_db_to_df, get_engine_for_tekkx_scalable_db, save_df_to_mysql
 from ..utilities.misc_utilities import get_file_path, split
-"""   LOAD ENV VARIABLES START   """
-RDS_HOST = os.getenv('RDS_HOST')
-NAME = os.getenv('user')
-PASSWORD = os.getenv('password')
-DB_NAME = os.getenv('db_name', "")
-YUGIOH_DB = os.getenv("yugioh_db")
-DB_PORT = os.getenv("DB_PORT")
-"""   LOAD ENV VARIABLES END   """
-
-### STATIC VARIABLES START ###
-URL = "https://yugipedia.com/api.php"
-SEMANTIC_URL = "https://yugipedia.com/index.php"
-HEADERS = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'
-}
-TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
-### STATIC VARIABLES END ###
+from ..config import HEADERS, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS, MEDIAWIKI_URL, TEKKX_SCALABLE_DB_NAME
 
 
 def create_overall_card_code_list() -> pd.DataFrame:
@@ -67,7 +46,8 @@ def retrieve_website_data() -> pd.DataFrame:
     start = datetime.datetime.now()
 
     try:
-        logger, engine = get_engine_for_tekkx_scalable_db(db_name=DB_NAME)
+        logger, engine = get_engine_for_tekkx_scalable_db(
+            db_name=TEKKX_SCALABLE_DB_NAME)
 
         with engine.begin() as conn:
             df_posts = pd.read_sql_query(
@@ -160,7 +140,8 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
     }
 
     try:
-        res_json = requests.get(url=URL, headers=HEADERS, params=obj).json()
+        res_json = requests.get(
+            url=MEDIAWIKI_URL, headers=HEADERS, params=obj).json()
         res_json_query_obj: dict = res_json.get("query", {})
 
         if "redirects" in res_json_query_obj:
@@ -170,7 +151,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         while "continue" in res_json:
             obj["rdcontinue"] = res_json["continue"].get("rdcontinue", "")
             res_json = requests.get(
-                url=URL, headers=HEADERS, params=obj).json()
+                url=MEDIAWIKI_URL, headers=HEADERS, params=obj).json()
             res_json_query_obj = res_json.get("query", {})
 
             if "redirects" in res_json_query_obj:
@@ -181,42 +162,6 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
     except requests.exceptions.JSONDecodeError as e:
         logging.error(f"JSONDecodeError in check_for_redirect: {e}")
         return redirect_dict
-
-
-def export_inventory_excel_old():
-    """
-    Exports the inventory data and overall card code list to Excel files.
-    """
-    try:
-        ygo_inventory_filename = "YGOInventoryV2.xlsx"
-        ygo_overall_card_list_filename = "OverallCardCodeList-2.xlsx"
-        ygo_inventory_export_path = get_file_path(ygo_inventory_filename)
-        ygo_overall_card_list_export_path = get_file_path(
-            ygo_overall_card_list_filename)
-
-        df_website = retrieve_website_data()
-
-        card_name_list = df_website["set_card_name_combined"].to_list()
-
-        dict_to_map = check_existing_card_names_to_update(card_name_list)
-        if dict_to_map:
-            df_to_replace_names = pd.DataFrame(
-                [{"name": key, "new name": value} for key, value in dict_to_map.items()])
-            df_website = pd.merge(df_website, df_to_replace_names, how="left",
-                                  left_on="set_card_name_combined", right_on="name").drop(columns=['name'])
-
-        df_overall_card_code_list_mapped = create_overall_card_code_list()
-
-        if ygo_inventory_export_path:
-            with pd.ExcelWriter(ygo_inventory_export_path, engine='xlsxwriter') as writer:
-                df_website.to_excel(writer, sheet_name="V2", index=False)
-        if ygo_overall_card_list_export_path:
-            with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
-                df_overall_card_code_list_mapped.to_excel(
-                    writer, sheet_name="Sheet1", index=False)
-
-    except Exception as e:
-        logging.error(f"Error exporting inventory to Excel: {e}")
 
 
 def export_inventory_excel():

@@ -7,21 +7,12 @@ import time
 import logging
 import pandas as pd
 import os
+from ...config import HEADERS, MEDIAWIKI_URL, SEMANTIC_URL, TABLE_YUGIOH_SETS
 
 from ..aws_utilities import upload_data
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
-
-MEDIAWIKI_URL: str = "https://yugipedia.com/api.php"
-SEMANTIC_URL: str = "https://yugipedia.com/index.php"
-TABLE_YUGIOH_SETS = 'yugioh_sets3'
-
-HEADERS: Dict[str, str] = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'
-}
 
 
 def clean_set_name(name: str, region: str, is_gallery: bool = False) -> str:
@@ -51,7 +42,7 @@ class YugiohSet:
         self.yugipedia_set_card_gallery: str = set_card_gallery_name if set_card_gallery_name else ""
         self.region: str = region
 
-        language = ""
+        language: str = ""
         if region == "Japanese":
             language = "JP"
         if region == "Japanese-Asian":
@@ -63,7 +54,7 @@ class YugiohSet:
         set_name: str = ""
         if set_card_list_name:
             set_name = clean_set_name(set_card_list_name, region)
-            logging.info(f"set_name: {set_name}")
+            logging.info(f"region: {region} | set_name: {set_name}")
             self.yugipedia_set_card_list_url: str = f"https://yugipedia.com/wiki/{set_card_list_name}"
             self.set_card_list_page_id: str = set_card_list_page_id
 
@@ -204,16 +195,20 @@ def step_2_fetch_all_set_card_galleries_for_regions(
             for page_id, page_data in pages.items():
                 set_gallery_name: str = page_data['title']
                 set_name: str = ""
+                language: str | None = None
                 match region:
                     case "Asian-English":
                         set_name = re.sub(
                             r"^Set Card Galleries:| \(OCG-AE(?:-UE|-1E|-LE)?\)", "", set_gallery_name)
+                        language = "AE"
                     case "Japanese":
                         set_name = re.sub(
                             r"^Set Card Galleries:| \((?:OCG|DM)-JP(?:-Reprint)?\)", "", set_gallery_name)
+                        language = "JP"
                     case "Japanese-Asian":
                         set_name = re.sub(
                             r"^Set Card Galleries:| \(OCG-JA\)", "", set_gallery_name)
+                        language = "JA"
                     case _:
                         set_name = ""
                         logging.warning(f"Unhandled region '{region}'")
@@ -359,8 +354,72 @@ def update_yugioh_sets_with_semantic_results(yugioh_sets: List[YugiohSet], objs:
             (y_set for y_set in yugioh_sets if y_set.name == set_name),
             None
         )
+        matching_sets = [
+            y_set for y_set in yugioh_sets if y_set.name == set_name]
+
+        if set_name == "Age of Overlord":
+            print("set_name: Age of Overlord")
+            print("matching_set: ", matching_set.__dict__)
+            print("matching sets: ", [
+                  matching_set.__dict__ for matching_set in matching_sets])
 
         if matching_set:
+            matching_set.set_type = obj.get("Set type", [""])[0].get("fulltext", "") if len(obj.get(
+                "Set type", [])) > 0 else ""
+            matching_set.series = obj.get("Series", [""])[0].get("fulltext", "") if len(obj.get(
+                "Series", [])) > 0 else ""
+            matching_set.set_image = obj.get("Set image", [""])[0] if len(obj.get(
+                "Set image", [])) > 0 else ""
+            matching_set.image_file = "File:{set_image}".format(
+                set_image=obj.get("Set image", [""])[0]) if len(obj.get(
+                    "Set image", [])) > 0 else ""
+            if matching_set.region == "Japanese":
+                matching_set.prefix = obj.get(
+                    "Japanese set and region prefix", [""])[0] if len(obj.get(
+                        "Japanese set and region prefix", [])) > 0 else ""
+                matching_set.release_date = datetime.datetime.fromtimestamp(int(obj.get(
+                    "Japanese release date", [""])[0]["timestamp"])).strftime('%Y-%m-%d') if len(obj.get(
+                        "Japanese release date", [])) > 0 else ""
+            elif matching_set.region == "Asian-English":
+                matching_set.prefix = obj.get(
+                    "Asian-English set and region prefix", [""])[0] if len(obj.get(
+                        "Asian-English set and region prefix", [])) > 0 else ""
+                matching_set.release_date = datetime.datetime.fromtimestamp(int(obj.get(
+                    "Asian-English release date", [""])[0]["timestamp"])).strftime('%Y-%m-%d') if len(obj.get(
+                        "Asian-English release date", [])) > 0 else ""
+            elif matching_set.region == "Japanese-Asian":
+                matching_set.prefix = obj.get(
+                    "Japanese-Asian set and region prefix", [""])[0] if len(obj.get(
+                        "Japanese-Asian set and region prefix", [])) > 0 else ""
+                matching_set.release_date = datetime.datetime.fromtimestamp(int(obj.get(
+                    "Japanese-Asian release date", [""])[0]["timestamp"])).strftime('%Y-%m-%d') if len(obj.get(
+                        "Japanese-Asian release date", [])) > 0 else ""
+
+            matching_set.set_code = assign_set_code(matching_set.prefix)
+
+    return yugioh_sets
+
+
+def update_yugioh_sets_with_semantic_results_v2(yugioh_sets: List[YugiohSet], objs: List[Dict[str, Any]]) -> List[YugiohSet]:
+    for obj in objs:
+        if not isinstance(obj, dict):
+            logging.warning(f"Unexpected data type: {type(obj)}")
+            continue
+
+        set_name: Optional[str] = obj.get("Page name", [None])[0]
+        if not set_name:
+            logging.info(f"Skipping result with missing 'Page name': {obj}")
+            continue
+
+        matching_sets = [
+            y_set for y_set in yugioh_sets if y_set.name == set_name]
+
+        # if set_name == "Age of Overlord":
+        #     print("set_name: Age of Overlord")
+        #     print("matching_set: ", matching_set.__dict__)
+        #     print("matching sets: ", [
+        #           matching_set.__dict__ for matching_set in matching_sets])
+        for matching_set in matching_sets:
             matching_set.set_type = obj.get("Set type", [""])[0].get("fulltext", "") if len(obj.get(
                 "Set type", [])) > 0 else ""
             matching_set.series = obj.get("Series", [""])[0].get("fulltext", "") if len(obj.get(
@@ -524,7 +583,7 @@ def get_yugioh_sets_v2(api_url: str = MEDIAWIKI_URL, regions: List[str] = ['Japa
     # Step 2: Fetch semantic results and update sets
     semantic_results: List[Dict[str, Any]
                            ] = fetch_yugioh_set_semantic_results()
-    yugioh_sets = update_yugioh_sets_with_semantic_results(
+    yugioh_sets = update_yugioh_sets_with_semantic_results_v2(
         yugioh_sets, semantic_results)
 
     # Step 3: Fetch Rush Duel set names to exclude

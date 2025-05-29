@@ -1,9 +1,7 @@
 from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional
-from uuid import uuid4
 import re
-import datetime
 import ast
 
 
@@ -41,7 +39,8 @@ class YugiohSet:
                  card_game: str | None = None,
                  release_date: str | None = None,
                  image_file: str | None = None,
-                 image_url: str | None = None
+                 image_url: str | None = None,
+                 region: str | None = None,
                  ):
         self.name = name
         self.set_code = set_code
@@ -50,6 +49,7 @@ class YugiohSet:
         self.release_date = release_date
         self.image_file = image_file
         self.image_url = image_url
+        self.region = region
 
         if not card_game:
             if language and language in ("JP", "KR", "JA", "AE"):
@@ -81,102 +81,6 @@ class YugiohSet:
         return self.__dict__
 
     @classmethod
-    def get_yugioh_set_from_yugipedia_semantic_search(cls, set_name, printout_obj) -> YugiohSet:
-        # yugipedia_result example
-        #
-        #     {
-        #     "Japanese release date": [
-        #       { "timestamp": "1613779200", "raw": "1/2021/2/20" }
-        #     ],
-        #     "Japanese set prefix": ["21CC"],
-        #     "Page name": ["\"Amabie-San\" Present Campaign"],
-        #     "Set image": [
-        #       {
-        #         "fulltext": "21CC-PromoJP.png",
-        #         "fullurl": "https://yugipedia.com/wiki/21CC-PromoJP.png",
-        #         "namespace": 0,
-        #         "exists": "",
-        #         "displaytitle": ""
-        #       }
-        #     ],
-        #     "language":["JP"]
-        #   }
-
-        name = set_name
-        # guid = uuid4()
-        set_code = printout_obj["Japanese set prefix"][0] if len(
-            printout_obj["Japanese set prefix"]) > 0 else None
-        set_image = printout_obj["Set image"][0]['fulltext'] if len(
-            printout_obj["Set image"]) > 0 else None
-        language = printout_obj["language"][0] if len(
-            printout_obj["language"]) > 0 else None
-        release_date = datetime.datetime.fromtimestamp(int(printout_obj["Japanese release date"][0]["timestamp"])).strftime('%Y-%m-%d') if len(
-            printout_obj["Japanese release date"]) > 0 else None
-        image_file = "File:{image_filename}".format(image_filename=printout_obj["Set image"][0]['fulltext']) if len(
-            printout_obj["Set image"]) > 0 else None
-        image_url = printout_obj['image_url'] if printout_obj['image_url'] else None
-        yugioh_set = YugiohSet(
-            name=name,
-            # guid=guid,
-            set_code=set_code,
-            set_image=set_image,
-            language=language,
-            release_date=release_date,
-            image_file=image_file,
-            image_url=image_url
-        )
-
-        return yugioh_set
-
-    @classmethod
-    def get_yugipedia_dict_from_yugioh_set(cls, yugioh_set):
-        if isinstance(yugioh_set, YugiohSet):
-            yugipedia_obj = {
-                "product": yugioh_set.name,
-                "Japanese set prefix": yugioh_set.set_code,
-                "date": yugioh_set.release_date,
-                "Set Card Lists": yugioh_set.yugipedia_set_card_list,
-                "Set Card Galleries": yugioh_set.yugipedia_set_card_gallery,
-                "Card Set Link": yugioh_set.yugipedia_set_card_list_url,
-                "gallery_url": yugioh_set.yugipedia_set_card_gallery_url
-            }
-
-            return yugipedia_obj
-
-    @classmethod
-    def get_dict_from_yugipedia_semantic_search(cls, set_name: str, printout_obj: dict):
-        name = set_name
-        guid = uuid4()
-        set_code = printout_obj["Japanese set prefix"][0] if len(
-            printout_obj["Japanese set prefix"]) > 0 else None
-        set_image = printout_obj["Set image"][0] if len(
-            printout_obj["Set image"]) > 0 else None
-        language = printout_obj["language"][0] if len(
-            printout_obj["language"]) > 0 else None
-        release_date = datetime.datetime.fromtimestamp(int(printout_obj["Japanese release date"][0]["timestamp"])).strftime('%Y-%m-%d') if len(
-            printout_obj["Japanese release date"]) > 0 else None
-
-        yugioh_set = YugiohSet(
-            name=name,
-            set_code=set_code,
-            set_image=set_image,
-            language=language,
-            release_date=release_date
-        )
-
-        yugipedia_obj = {
-            "product": yugioh_set.name,
-            "Japanese set prefix": yugioh_set.set_code,
-            "date": yugioh_set.release_date,
-            "Set Card Lists": yugioh_set.yugipedia_set_card_list,
-            "Set Card Galleries": yugioh_set.yugipedia_set_card_gallery,
-            "Card Set Link": yugioh_set.yugipedia_set_card_list_url,
-            "gallery_url": yugioh_set.yugipedia_set_card_gallery_url
-        }
-
-        return yugipedia_obj
-
-    @classmethod
     def get_yugioh_set_from_db_obj(cls, obj: dict) -> YugiohSet:
         return YugiohSet(
             name=obj.get('name'),
@@ -184,190 +88,9 @@ class YugiohSet:
             set_image=obj.get('set_image'),
             language=obj.get('language'),
             card_game=obj.get('card_game'),
-            release_date=obj.get('release_date')
+            release_date=obj.get('release_date'),
+            region=obj.get('region')
         )
-
-
-# class YugiohCard:
-#     def __init__(self,
-#                  name,
-#                  password=None,
-#                  card_type=None,
-#                  lore=None,
-#                  level=None,
-#                  race=None,
-#                  archetypes=[],
-#                  atk_value=None,
-#                  def_value=None,
-#                  atk_string=None,
-#                  def_string=None,
-#                  link_rating=None,
-#                  link_arrows=[],
-#                  rank=None,
-#                  pendulum_scale=None,
-#                  pendulum_effect=None,
-#                  card_image_name=None,
-#                  attribute=None
-#                  ):
-#         self.name = name
-#         self.password = password
-#         self.card_type = card_type
-#         self.lore = lore
-#         self.level = level
-#         self.race = race
-#         self.archetypes = archetypes
-#         self.atk_value = atk_value
-#         self.def_value = def_value
-#         self.atk_string = atk_string
-#         self.def_string = def_string
-#         self.link_rating = link_rating
-#         self.link_arrows = link_arrows
-#         self.pendulum_scale = pendulum_scale
-#         self.rank = rank
-#         self.pendulum_effect = pendulum_effect
-#         self.card_image_name = card_image_name
-#         self.attribute = attribute
-
-#     def get_dict(self):
-#         self.archetypes = str(self.archetypes)
-#         self.link_arrows = str(self.link_arrows)
-#         return self.__dict__
-
-#     @classmethod
-#     def format_lore(cls, value: str) -> str:
-#         value_string = value.replace("<br />", "\n")
-#         pattern_2 = r"(\[{2}\|?.*?\]{2})"
-#         results: list[str] = re.findall(pattern_2, value_string)
-#         for result in results:
-#             value_string = value_string.replace(result, result.split("|")[0]
-#                                                 .replace("[", "")
-#                                                 .replace("]", "")
-#                                                 )
-
-#         return value_string
-
-#     @classmethod
-#     def get_card_from_yugipedia_semantic_search(cls, card_name: str, printout_obj: dict):
-#         name = card_name
-#         password = printout_obj["Password"][0] if len(
-#             printout_obj["Password"]) > 0 else None
-#         card_type = printout_obj["Card type"][0]["fulltext"] if len(
-#             printout_obj["Card type"]) > 0 else None
-#         lore = YugiohCard.format_lore(printout_obj["Lore"][0]) if len(
-#             printout_obj["Lore"]) > 0 else None
-#         level = printout_obj["Level"][0] if len(
-#             printout_obj["Level"]) > 0 else None
-
-#         race = printout_obj["Type"][0]["fulltext"] if len(
-#             printout_obj["Type"]) > 0 else printout_obj["Property"][0] if len(printout_obj["Property"]) > 0 else None
-
-#         archetypes = [archseries["fulltext"] for archseries in printout_obj["Archseries"]] if len(
-#             printout_obj["Archseries"]) > 0 else []
-#         atk_value = printout_obj["ATK"][0] if len(
-#             printout_obj["ATK"]) > 0 else None
-#         def_value = printout_obj["DEF"][0] if len(
-#             printout_obj["DEF"]) > 0 else None
-#         atk_string = printout_obj["ATK string"][0] if len(
-#             printout_obj["ATK string"]) > 0 else None
-#         def_string = printout_obj["DEF string"][0] if len(
-#             printout_obj["DEF string"]) > 0 else None
-#         link_rating = printout_obj["Link Rating"][0] if len(
-#             printout_obj["Link Rating"]) > 0 else None
-#         link_arrows = printout_obj["Link Arrows"] if len(
-#             printout_obj["Link Arrows"]) > 0 else []
-#         rank = printout_obj["Rank"][0] if len(
-#             printout_obj["Rank"]) > 0 else None
-#         pendulum_scale = printout_obj["Pendulum Scale"][0] if len(
-#             printout_obj["Pendulum Scale"]) > 0 else None
-#         pendulum_effect = YugiohCard.format_lore(printout_obj["Pendulum Effect"][0]) if len(
-#             printout_obj["Pendulum Effect"]) > 0 else None
-#         card_image_name = printout_obj["Card image name"][0] if len(
-#             printout_obj["Card image name"]) > 0 else None
-#         attribute = printout_obj["Attribute"][0]["fulltext"] if len(
-#             printout_obj["Attribute"]) > 0 else None
-
-#         card = YugiohCard(
-#             name=name,
-#             password=password,
-#             card_type=card_type,
-#             lore=lore,
-#             level=level,
-#             race=race,
-#             archetypes=archetypes,
-#             atk_value=atk_value,
-#             def_value=def_value,
-#             atk_string=atk_string,
-#             def_string=def_string,
-#             link_rating=link_rating,
-#             link_arrows=link_arrows,
-#             rank=rank,
-#             pendulum_scale=pendulum_scale,
-#             pendulum_effect=pendulum_effect,
-#             card_image_name=card_image_name,
-#             attribute=attribute
-#         )
-
-#         return card
-
-#     @classmethod
-#     def get_dict_from_yugipedia_semantic_search(cls, card_name: str, printout_obj: dict):
-#         name = card_name
-#         password = printout_obj["Password"][0] if len(
-#             printout_obj["Password"]) > 0 else None
-#         card_type = printout_obj["Card type"][0]["fulltext"] if len(
-#             printout_obj["Card type"]) > 0 else None
-#         lore = YugiohCard.format_lore(printout_obj["Lore"][0]) if len(
-#             printout_obj["Lore"]) > 0 else ""
-#         level = printout_obj["Level"][0] if len(
-#             printout_obj["Level"]) > 0 else None
-#         race = printout_obj["Type"][0]["fulltext"] if len(
-#             printout_obj["Type"]) > 0 else printout_obj["Property"][0] if len(printout_obj["Property"]) > 0 else None
-#         archetypes = printout_obj["Archseries"] if len(
-#             printout_obj["Archseries"]) > 0 else []
-#         atk_value = printout_obj["ATK"][0] if len(
-#             printout_obj["ATK"]) > 0 else None
-#         def_value = printout_obj["DEF"][0] if len(
-#             printout_obj["DEF"]) > 0 else None
-#         atk_string = printout_obj["ATK string"][0] if len(
-#             printout_obj["ATK string"]) > 0 else None
-#         def_string = printout_obj["DEF string"][0] if len(
-#             printout_obj["DEF string"]) > 0 else None
-#         link_rating = printout_obj["Link Rating"][0] if len(
-#             printout_obj["Link Rating"]) > 0 else None
-#         link_arrows = printout_obj["Link Arrows"] if len(
-#             printout_obj["Link Arrows"]) > 0 else []
-#         rank = printout_obj["Rank"][0] if len(
-#             printout_obj["Rank"]) > 0 else None
-#         pendulum_scale = printout_obj["Pendulum Scale"][0] if len(
-#             printout_obj["Pendulum Scale"]) > 0 else None
-#         pendulum_effect = YugiohCard.format_lore(printout_obj["Pendulum Effect"][0]) if len(
-#             printout_obj["Pendulum Effect"]) > 0 else None
-#         card_image_name = printout_obj["Card image name"][0] if len(
-#             printout_obj["Card image name"]) > 0 else None
-#         attribute = printout_obj["Attribute"][0]["fulltext"] if len(
-#             printout_obj["Attribute"]) > 0 else None
-
-#         desc = "[ Pendulum Effect ]" + "\n" + pendulum_effect + \
-#             "\n" + lore if pendulum_effect is not None else lore  # type: ignore
-
-#         yugipedia_obj = {
-#             "name": name,
-#             "id": password,
-#             "level": level if level is not None else rank if rank is not None else None,
-#             "desc": desc,
-#             "archetype": archetypes[0] if len(archetypes) > 0 else None,
-#             "race": race.replace(" Card", "") if race is not None else None,
-#             "type": card_type,
-#             "atk": atk_string,
-#             "def": def_string,
-#             "attribute": attribute,
-#             "linkval": link_rating,
-#             "linkmarkers": link_arrows[0] if len(link_arrows) > 0 else None,
-#             "scale": pendulum_scale,
-#             "card_image_name": card_image_name
-#         }
-
-#         return yugipedia_obj
 
 
 class YugiohCard:
@@ -413,7 +136,7 @@ class YugiohCard:
         self.pendulum_scale: str = self.get_first(
             attributes.get("Pendulum Scale", attributes.get("pendulum_scale", None)))
         self.pendulum_effect: str = format_lore(
-            self.get_first(attributes.get("Pendulum Effect"))) if self.get_first(attributes.get("Pendulum Effect")) else attributes.get("pendulum_effect", None)
+            self.get_first(attributes.get("Pendulum Effect", ""))) if self.get_first(attributes.get("Pendulum Effect")) else attributes.get("pendulum_effect", "")
         self.rank: str = self.get_first(
             attributes.get("Rank", attributes.get("rank", None)))
         self.ocg_status: str = self.extract_fulltext_single(
@@ -542,9 +265,9 @@ class YugiohRarity:
 
 class YugiohSetCard:
     def __init__(self,
-                 yugioh_set: YugiohSet,
-                 yugioh_card: YugiohCard,
-                 yugioh_rarity: YugiohRarity,
+                 yugioh_set: YugiohSet | None,
+                 yugioh_card: YugiohCard | None,
+                 yugioh_rarity: YugiohRarity | None,
                  code: str | None = None,
                  image_url: str | None = None,
                  image_file: str | None = None,
@@ -622,6 +345,8 @@ class YugiohSetCard:
                     "set_card_code": self.code,
                     "id": self.card.password,
                     "level": self.card.level if self.card.level is not None else self.card.rank if self.card.rank is not None else None,
+                    "region": self.set.region,
+                    "language": self.set.language,
                     "desc": desc,
                     "archetype": archetypes_list[0] if len(archetypes_list) > 0 else None,
                     "race": self.card.race,

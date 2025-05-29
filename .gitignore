@@ -4,3 +4,4 @@ dist/
 myvenv*/
 **/*.egg-info
 .env
+output/

@@ -1,14 +1,7 @@
 import csv
 import requests
 from typing import List, Dict
-
-HEADERS: Dict[str, str] = {
-    'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'
-}
-
-MEDIAWIKI_URL = "https://yugipedia.com/api.php"
+from ...config import HEADERS, MEDIAWIKI_URL
 
 
 class YugiohRarity:
@@ -79,15 +72,13 @@ def get_redirects_for_pages(titles: List[str], limit: int = 500) -> List[Dict[st
                 data = response.json()
                 print("data", data)
                 if "query" in data and "pages" in data["query"]:
-                    pages_values: List[Dict[str, str | int | List[Dict[str, str | int]]]
-                                       ] = data['query']["pages"].values()
-                    # print(pages_values)
+                    pages_values: List[Dict] = data['query']["pages"].values()
                     for page_value in pages_values:
                         print("page_value", page_value)
                         if "redirects" in page_value.keys():
                             print("page_value", page_value)
-                            redirect_list: List[Dict[str, str |
-                                                     int]] = page_value['redirects']  # type: ignore
+                            # type: ignore
+                            redirect_list: List[Dict] = page_value['redirects']
                             for redirect in redirect_list:
                                 print("redirect", redirect)
                                 final_redirects.append(

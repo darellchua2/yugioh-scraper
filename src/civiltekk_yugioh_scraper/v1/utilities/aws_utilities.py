@@ -1,22 +1,13 @@
 from typing import Literal, Optional
 import boto3
 from io import BytesIO, StringIO
-import os
 import sys
 from sqlalchemy import create_engine, text
-from dotenv import load_dotenv
 import logging
 import pandas as pd
 import pymysql
+from ..config import RDS_HOST, NAME, PASSWORD, TEKKX_SCALABLE_DB_NAME, YUGIOH_DB, DB_PORT
 
-# Load environment variables
-load_dotenv()
-RDS_HOST = os.getenv('RDS_HOST')
-NAME = os.getenv('user')
-PASSWORD = os.getenv('password')
-TEKKX_SCALABLE_DB_NAME = os.getenv('db_name', "tekkx_scalable")
-YUGIOH_DB = os.getenv("yugioh_db", "yugioh_data")
-DB_PORT = os.getenv("DB_PORT", "3307")
 
 # Setup logging
 logger = logging.getLogger()
