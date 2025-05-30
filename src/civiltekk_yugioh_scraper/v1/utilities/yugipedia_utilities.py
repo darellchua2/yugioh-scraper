@@ -1068,15 +1068,10 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
                                                       rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
     }
     for ygo_set_card_image in yugioh_set_cards_with_images:
-        # ygo_set_card_with_code_found = next(
-        #     (ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
-        #      if ygo_set_card_image.card == ygo_set_card.card and
-        #      ygo_set_card_image.set == ygo_set_card.set and
-        #      ygo_set_card_image.rarity == ygo_set_card.rarity), None
-        # )
-        ygo_set_card_with_code_found = ygo_set_card_with_code_dict.get("{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card_image.set.name if ygo_set_card_image.set is not None else "",
-                                                                                                                     card_name=ygo_set_card_image.card.name if ygo_set_card_image.card is not None else "",
-                                                                                                                     rarity_name=ygo_set_card_image.rarity.name if ygo_set_card_image.rarity is not None else ""), None)
+        ygo_set_card_with_code_found = ygo_set_card_with_code_dict.get("{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card_image.set.region if ygo_set_card_image.set is not None else "",
+                                                                                                                              set_name=ygo_set_card_image.set.name if ygo_set_card_image.set is not None else "",
+                                                                                                                              card_name=ygo_set_card_image.card.name if ygo_set_card_image.card is not None else "",
+                                                                                                                              rarity_name=ygo_set_card_image.rarity.name if ygo_set_card_image.rarity is not None else ""), None)
         if ygo_set_card_with_code_found is not None:
             ygo_set_card_image.code = ygo_set_card_with_code_found.code
         yugioh_set_cards_final.append(ygo_set_card_image)
@@ -1087,15 +1082,10 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
                                                       rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_final
     }
     for ygo_set_card_with_code in yugioh_set_cards_with_codes:
-        # ygo_set_card_with_image_found = next(
-        #     (ygo_set_card for ygo_set_card in yugioh_set_cards_final
-        #      if ygo_set_card_with_code.card.name == ygo_set_card.card.name and  # type: ignore
-        #      ygo_set_card_with_code.set.name == ygo_set_card.set.name and  # type: ignore
-        #      ygo_set_card_with_code.rarity.name == ygo_set_card.rarity.name), None  # type: ignore
-        # )
-        ygo_set_card_with_image_found = ygo_set_card_final_dict.get("{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card_with_code.set.name if ygo_set_card_with_code.set is not None else "",
-                                                                                                                  card_name=ygo_set_card_with_code.card.name if ygo_set_card_with_code.card is not None else "",
-                                                                                                                  rarity_name=ygo_set_card_with_code.rarity.name if ygo_set_card_with_code.rarity is not None else ""), None)
+        ygo_set_card_with_image_found = ygo_set_card_final_dict.get("{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card_with_code.set.region if ygo_set_card_with_code.set is not None else "",
+                                                                                                                           set_name=ygo_set_card_with_code.set.name if ygo_set_card_with_code.set is not None else "",
+                                                                                                                           card_name=ygo_set_card_with_code.card.name if ygo_set_card_with_code.card is not None else "",
+                                                                                                                           rarity_name=ygo_set_card_with_code.rarity.name if ygo_set_card_with_code.rarity is not None else ""), None)
 
         if ygo_set_card_with_image_found is None:
             yugioh_set_cards_final.append(ygo_set_card_with_code)
