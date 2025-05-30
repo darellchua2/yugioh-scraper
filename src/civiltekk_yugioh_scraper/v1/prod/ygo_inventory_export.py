@@ -179,7 +179,7 @@ def export_inventory_excel():
         # 🟡 STEP 1: Pull latest Asian English entries from MySQL (if any)
         try:
             _, engine = get_engine_for_tekkx_scalable_db(db_name="yugioh_data")
-            query = "SELECT * FROM ygo_inventory_data WHERE region = 'Asian English'"
+            query = "SELECT * FROM ygo_inventory_data WHERE region = 'Asian-English'"
             df_asian_english = pd.read_sql_query(query, engine)
         except Exception as e:
             logging.warning(f"No Asian English records found in DB yet: {e}")
