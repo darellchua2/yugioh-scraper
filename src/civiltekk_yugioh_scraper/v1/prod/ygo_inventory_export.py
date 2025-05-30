@@ -26,7 +26,7 @@ def create_overall_card_code_list() -> pd.DataFrame:
         )
         df_overall_card_code_list['quantity'] = None
 
-        cols = ['set_card_name_combined', 'set_name',
+        cols = ['region', 'set_card_name_combined', 'set_name',
                 'set_card_code_updated', 'rarity_name', 'quantity']
         df_overall_card_code_list = df_overall_card_code_list[cols]
 
