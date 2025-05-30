@@ -26,7 +26,7 @@ def create_overall_card_code_list() -> pd.DataFrame:
         )
         df_overall_card_code_list['quantity'] = None
 
-        cols = ['set_card_name_combined', 'set_name',
+        cols = ['region', 'set_card_name_combined', 'set_name',
                 'set_card_code_updated', 'rarity_name', 'quantity']
         df_overall_card_code_list = df_overall_card_code_list[cols]
 
@@ -74,13 +74,13 @@ def retrieve_website_data() -> pd.DataFrame:
                       'product_id'], right_on=['product_id'])
         df = df.dropna(subset=['set_card_name_combined'])
         df['quantity'] = df['quantity'].astype('int64')
+        df['region'] = "Japanese"
 
-        cols = ["set_card_name_combined", "set_name", "set_card_code_updated",
+        cols = ["region", "set_card_name_combined", "set_name", "set_card_code_updated",
                 "rarity_name", "quantity", "price", "post_name"]
         df = df[cols]
         df['duplicated'] = df.duplicated(
             subset=['set_card_code_updated', 'set_name', 'rarity_name'], keep='last')
-        df['region'] = "Japanese"
 
         end = datetime.datetime.now()
         logging.info(f"Data retrieval time: {end - start}")
@@ -166,7 +166,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
 
 def export_inventory_excel():
     """
-    Updates Japanese entries from WordPress, keeps Asian English entries from DB, and saves the combined data.
+    Updates Japanese entries from WordPress, keeps Asian-English entries from DB, and saves the combined data.
     """
     try:
         # Output paths
@@ -176,13 +176,13 @@ def export_inventory_excel():
         ygo_overall_card_list_export_path = get_file_path(
             ygo_overall_card_list_filename)
 
-        # 🟡 STEP 1: Pull latest Asian English entries from MySQL (if any)
+        # 🟡 STEP 1: Pull latest Asian-English entries from MySQL (if any)
         try:
             _, engine = get_engine_for_tekkx_scalable_db(db_name="yugioh_data")
-            query = "SELECT * FROM ygo_inventory_data WHERE region = 'Asian English'"
+            query = "SELECT * FROM ygo_inventory_data WHERE region = 'Asian-English'"
             df_asian_english = pd.read_sql_query(query, engine)
         except Exception as e:
-            logging.warning(f"No Asian English records found in DB yet: {e}")
+            logging.warning(f"No Asian-English records found in DB yet: {e}")
             df_asian_english = pd.DataFrame()
 
         # 🔵 STEP 2: Pull updated Japanese entries from WordPress
@@ -201,7 +201,7 @@ def export_inventory_excel():
                 left_on="set_card_name_combined", right_on="name"
             ).drop(columns=['name'])
 
-        # 🧩 STEP 4: Combine Japanese + Asian English
+        # 🧩 STEP 4: Combine Japanese + Asian-English
         df_combined = pd.concat(
             [df_website, df_asian_english], ignore_index=True)
 
