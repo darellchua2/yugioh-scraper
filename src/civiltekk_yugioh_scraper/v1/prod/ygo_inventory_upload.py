@@ -23,8 +23,14 @@ def upload_inventory_main(filename="YGOInventoryV2.xlsx",
     filepath = get_file_path(filename)
     if filepath:
         df = pd.read_excel(filepath)
-        save_df_to_s3(df, s3_bucket_name, dir, filename_to_upload)
-        save_df_to_mysql(df, table_name=ygo_inventory_data_table,
+        filtered_df = df[
+            df['post_title'].isna() |
+            (df['post_title'] == '') |
+            df['post_title'].str.endswith(" | Japanese", na=False)
+        ]
+
+        save_df_to_s3(filtered_df, s3_bucket_name, dir, filename_to_upload)
+        save_df_to_mysql(filtered_df, table_name=ygo_inventory_data_table,
                          if_exists="replace")
 
 

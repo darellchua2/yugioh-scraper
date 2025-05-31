@@ -67,20 +67,31 @@ def retrieve_website_data() -> pd.DataFrame:
 
         df_product_meta['quantity'] = df_product_meta['quantity'].fillna(0)
         pattern_split = r" \| "
-        df_posts[['set_card_code_updated', "set_card_name_combined", 'rarity_name', 'set_name']] = df_posts['post_title'].str.split(
-            pattern_split, n=4, expand=True)
+        # Split post_title into parts (handles both 4 and 5-part formats)
+        split_cols = df_posts['post_title'].str.split(r'\s*\|\s*', expand=True)
+
+        # Assign fixed columns (these exist in both formats)
+        df_posts['set_card_code_updated'] = split_cols[0]
+        df_posts['set_card_name_combined'] = split_cols[1]
+        df_posts['rarity_name'] = split_cols[2]
+        df_posts['set_name'] = split_cols[3]
+
+        # Region only exists in the new format (index 4)
+        df_posts['region'] = split_cols[4]
+
+        # Fill missing region values with default 'Japanese' (for old format)
+        df_posts['region'] = df_posts['region'].fillna('Japanese')
 
         df = pd.merge(df_posts, df_product_meta, how='left', left_on=[
                       'product_id'], right_on=['product_id'])
         df = df.dropna(subset=['set_card_name_combined'])
-        df['quantity'] = df['quantity'].astype('int64')
-        df['region'] = "Japanese"
+        df['quantity'] = df['quantity'].fillna(0).astype('int64')
 
         cols = ["region", "set_card_name_combined", "set_name", "set_card_code_updated",
-                "rarity_name", "quantity", "price", "post_name"]
+                "rarity_name", "quantity", "price", "post_name", "post_title"]
         df = df[cols]
         df['duplicated'] = df.duplicated(
-            subset=['set_card_code_updated', 'set_name', 'rarity_name'], keep='last')
+            subset=['set_card_code_updated', 'set_name', 'rarity_name', 'post_title'], keep='last')
 
         end = datetime.datetime.now()
         logging.info(f"Data retrieval time: {end - start}")
