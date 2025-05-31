@@ -1063,9 +1063,10 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
                                  yugioh_set_cards_with_codes: List[YugiohSetCard]):
     yugioh_set_cards_final: List[YugiohSetCard] = []
     ygo_set_card_with_code_dict = {
-        "{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
-                                                      card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
-                                                      rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
+        "{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
+                                                               set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
+                                                               card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
+                                                               rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
     }
     for ygo_set_card_image in yugioh_set_cards_with_images:
         ygo_set_card_with_code_found = ygo_set_card_with_code_dict.get("{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card_image.set.region if ygo_set_card_image.set is not None else "",
@@ -1077,9 +1078,10 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
         yugioh_set_cards_final.append(ygo_set_card_image)
 
     ygo_set_card_final_dict = {
-        "{set_name}|{card_name}|{rarity_name}".format(set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
-                                                      card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
-                                                      rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_final
+        "{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
+                                                               set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
+                                                               card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
+                                                               rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_final
     }
     for ygo_set_card_with_code in yugioh_set_cards_with_codes:
         ygo_set_card_with_image_found = ygo_set_card_final_dict.get("{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card_with_code.set.region if ygo_set_card_with_code.set is not None else "",
