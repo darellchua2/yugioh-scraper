@@ -992,7 +992,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 
     # to remove after testing
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["EP15", "ADDR", "AGOV"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["EP15", "ADDR", "AGOV", "ETCO"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 

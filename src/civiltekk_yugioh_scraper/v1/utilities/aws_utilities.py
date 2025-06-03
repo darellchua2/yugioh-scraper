@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Dict, List, Literal, Optional
 import boto3
 from io import BytesIO, StringIO
 import sys
@@ -175,6 +175,33 @@ def retrieve_data_from_db_to_df(table_name: str, db_name: str = TEKKX_SCALABLE_D
                 sql=text(f"SELECT * FROM {table_name}"), con=conn)
             logger.info(f"Data retrieved from {db_name}.{table_name}")
             return df
+    except Exception as e:
+        logger.error(f"Failed to retrieve data from database: {e}")
+        raise
+
+
+def retrieve_data_from_db_to_list_of_dict(table_name: str, db_name: str = TEKKX_SCALABLE_DB_NAME) -> List[Dict]:
+    """
+    Retrieve data from a MySQL database and load it into a pandas DataFrame.
+
+    Args:
+        table_name (str): The name of the table to retrieve data from.
+        db_name (str): The name of the database.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the retrieved data.
+
+    Raises:
+        Exception: If the data retrieval fails.
+    """
+    logger, engine = get_engine_for_tekkx_scalable_db(db_name)
+
+    try:
+        with engine.begin() as conn:
+            df = pd.read_sql_query(
+                sql=text(f"SELECT * FROM {table_name}"), con=conn)
+            logger.info(f"Data retrieved from {db_name}.{table_name}")
+            return df.to_dict(orient="records")
     except Exception as e:
         logger.error(f"Failed to retrieve data from database: {e}")
         raise
