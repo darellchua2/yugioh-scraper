@@ -137,40 +137,43 @@ def retrieve_website_data_to_list_of_dict() -> List[TekkxProductData]:
         return list_of_results
 
 
-def check_existing_card_names_to_update(card_name_list: List[str]) -> Dict[str, str]:
+def check_existing_card_names_to_update(card_name_list: list[str]) -> dict:
     """
-    Checks if card names have redirection entries using concurrent threads.
+    Checks for existing card names and updates their mappings using concurrent threads.
 
     Args:
-        card_name_list (List[str]): List of card names.
+        card_name_list (list[str]): List of card names to check for updates.
 
     Returns:
-        Dict[str, str]: Dictionary mapping original names to redirected names.
+        dict: A dictionary mapping old card names to new card names.
     """
-    redirect_dict: Dict[str, str] = {}
+    redirect_dict = {}
     try:
-        for split_list in split(card_name_list, 50):
-            with ThreadPoolExecutor() as executor:
-                futures = [executor.submit(check_for_redirect, split_list)]
-                for future in concurrent.futures.as_completed(futures):
-                    redirect_dict.update(future.result())
+        list_of_split_card_name_list = list(split(card_name_list, 50))
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(check_for_redirect, split_list)
+                       for split_list in list_of_split_card_name_list]
+            for future in concurrent.futures.as_completed(futures):
+                redirect_dict.update(future.result())
+
         return redirect_dict
     except Exception as e:
         logging.error(f"Error checking and updating card names: {e}")
         return {}
 
 
-def check_for_redirect(list_of_card_names: List[str]) -> Dict[str, str]:
+def check_for_redirect(list_of_card_names: list[str]) -> dict:
     """
-    Checks the Yugipedia API for redirects for the provided card names.
+    Checks for redirects for a list of card names using the Yugipedia API.
 
     Args:
-        list_of_card_names (List[str]): List of names.
+        list_of_card_names (list[str]): List of card names to check for redirects.
 
     Returns:
-        Dict[str, str]: Mappings of original to redirected names.
+        dict: A dictionary mapping old card names to redirected card names.
     """
-    redirect_dict: Dict[str, str] = {}
+    redirect_dict = {}
     card_list_string = "|".join(list_of_card_names)
 
     obj = {
@@ -185,14 +188,22 @@ def check_for_redirect(list_of_card_names: List[str]) -> Dict[str, str]:
     try:
         res_json = requests.get(
             url=MEDIAWIKI_URL, headers=HEADERS, params=obj).json()
-        while True:
-            for item in res_json.get("query", {}).get("redirects", []):
+        res_json_query_obj: dict = res_json.get("query", {})
+
+        if "redirects" in res_json_query_obj:
+            for item in res_json_query_obj["redirects"]:
                 redirect_dict[item["from"]] = item["to"]
-            if "continue" not in res_json:
-                break
+
+        while "continue" in res_json:
             obj["rdcontinue"] = res_json["continue"].get("rdcontinue", "")
             res_json = requests.get(
                 url=MEDIAWIKI_URL, headers=HEADERS, params=obj).json()
+            res_json_query_obj = res_json.get("query", {})
+
+            if "redirects" in res_json_query_obj:
+                for item in res_json_query_obj["redirects"]:
+                    redirect_dict[item["from"]] = item["to"]
+
         return redirect_dict
     except requests.exceptions.JSONDecodeError as e:
         logging.error(f"JSONDecodeError in check_for_redirect: {e}")
