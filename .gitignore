@@ -6,3 +6,4 @@ myvenv*/
 .env
 output/
 src/civiltekk_yugioh_scraper/v1/prod/ygo_inventory_export.py
+*.csv
