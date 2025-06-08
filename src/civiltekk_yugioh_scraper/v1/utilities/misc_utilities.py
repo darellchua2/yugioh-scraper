@@ -5,7 +5,7 @@ import time
 import os
 import platform
 from typing import Generator, Tuple, Optional
-from ..config import JAPANESE_CHARS_REGEX, WINDOWS_EXPORT_PATH, LINUX_EXPORT_PATH, READ_TIMEOUT_ERROR, JSON_ERROR, BASE_TEKKX_PRODUCT_URL, BIGWEB_DEFAULT_HEADER
+from ..config import JAPANESE_CHARS_REGEX, WINDOWS_EXPORT_PATH, LINUX_EXPORT_PATH, READ_TIMEOUT_ERROR, JSON_ERROR, BASE_TEKKX_PRODUCT_URL, BIGWEB_DEFAULT_HEADER, HEADERS
 
 
 def check_for_jap_chars(x: str) -> bool:
@@ -97,37 +97,29 @@ def run_request_until_response(url: str, params: dict, max_counter: int = 5) -> 
     return response
 
 
-def run_bigweb_request_until_response(url: str, params: dict, max_counter: int = 5, headers: dict = BIGWEB_DEFAULT_HEADER) -> Optional[requests.Response]:
-    """
-    Runs an HTTP GET request with retries if it times out.
-
-    Args:
-        url (str): The URL to request.
-        params (dict): The request parameters.
-        max_counter (int): Maximum number of retry attempts.
-
-    Returns:
-        Optional[requests.Response]: The HTTP response, or None if the request fails.
-    """
+def run_yugipedia_request_until_response(url: str, params: dict, headers=HEADERS, max_counter: int = 5) -> requests.Response | None:
     response = None
     counter = 0
-    while counter < max_counter:
+    while not response and counter < max_counter:
         time.sleep(1)
         try:
-            print(url, params)
-            response = requests.get(
-                url, params=params, timeout=10, headers=headers)
-            if response.status_code == 200:
-                break
+            response = requests.get(url, timeout=10)
+            print(url)
         except requests.exceptions.ReadTimeout as e:
-            log_error(params, READ_TIMEOUT_ERROR, url, counter)
-        except Exception as e:
-            log_error(params, str(e), url, counter)
+            error_string = ""
+            for key, value in params.items():
+                error_string = error_string + \
+                    "{key}:{value}".format(key=key, value=value) + "\n"
+            # logging.exception("{error_string}".format(
+            #     error_string=error_string))
+            print(
+                "ReadTimeoutError: {url} - Counter {counter}".format(url=url, counter=counter))
         finally:
             counter += 1
 
     if counter == max_counter:
-        logging.error(f"Exceeded trying {max_counter} times for {url}")
+        print("Exceeded trying {max_counter} times for {url}".format(
+            url=url, max_counter=max_counter))
 
     return response
 

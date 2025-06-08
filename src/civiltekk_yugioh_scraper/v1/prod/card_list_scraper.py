@@ -21,8 +21,8 @@ def card_list_scraper(to_csv: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
         df_missing_links.to_csv(
             "./output/missing_links.csv", index=False)
 
-    upload_data(df, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS,
-                "replace", db_name="yugioh_data")
+    # upload_data(df, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS,
+    #             "replace", db_name="yugioh_data")
 
     end = datetime.datetime.now()
     difference = end - start

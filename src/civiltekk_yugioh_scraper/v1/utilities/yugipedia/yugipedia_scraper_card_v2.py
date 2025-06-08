@@ -1,7 +1,13 @@
 import requests
 from typing import List, Dict, Any, Optional
+
+from ...utilities.misc_utilities import run_request_until_response
 from ...models.yugipedia_models import YugiohCard
 from ...config import HEADERS
+import concurrent.futures
+import string
+import csv
+import time
 
 
 def card_semantic_search_params(character: str, offset: int, limit: int = 500) -> Dict[str, Any]:
@@ -58,8 +64,9 @@ def fetch_card_data(character: str, offset: int = 0, limit: int = 500) -> Option
     params = card_semantic_search_params(character, offset, limit)
 
     try:
-        response = requests.get(base_url, headers=HEADERS,
-                                params=params, timeout=10)
+        # response = requests.get(base_url, headers=HEADERS,
+        #                         params=params, timeout=10)
+        response = run_request_until_response(base_url, params)
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
 
         # Check if the response contains valid JSON
@@ -83,6 +90,7 @@ def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[Yug
 
     while True:
         print(f"Fetching data with offset {offset}...")
+        time.sleep(0.5)
         data = fetch_card_data(character, offset, limit)
 
         if data is None or "results" not in data:
@@ -124,12 +132,6 @@ def display_card_data(cards: List[YugiohCard]) -> None:
         print("-" * 40)
 
 
-import concurrent.futures
-import string
-import csv
-from typing import List
-
-
 def save_cards_to_csv(cards: List[YugiohCard], filename: str) -> None:
     """
     Save a list of YugiohCard instances to a CSV file.
@@ -140,7 +142,7 @@ def save_cards_to_csv(cards: List[YugiohCard], filename: str) -> None:
         # Write header only if the file is empty
         if file.tell() == 0:
             writer.writerow([
-                "name", "password", "card_type", "level", "race", "Type", "Archetype Support",
+                "name", "english_name", "password", "card_type", "level", "race", "Type", "Archetype Support",
                 "Property", "Lore", "Attribute", "atk_string", "def_string", "Link Arrows", "Link Rating", "Materials",
                 "archtypes", "Pendulum Scale", "Pendulum Effect", "Rank", "OCG Status", "Card Image Name", "Release"
             ])
@@ -148,7 +150,7 @@ def save_cards_to_csv(cards: List[YugiohCard], filename: str) -> None:
         # Write card data
         for card in cards:
             writer.writerow([
-                card.name, card.password, card.card_type, card.level, card.race, card.type,
+                card.name, card.english_name, card.password, card.card_type, card.level, card.race, card.type,
                 card.archetype_support, card.property, card.lore, card.attribute, card.atk_string, card.def_string,
                 card.link_arrows, card.link_rating, card.materials, card.archetypes, card.pendulum_scale,
                 card.pendulum_effect, card.rank, card.ocg_status, card.card_image_name, card.release

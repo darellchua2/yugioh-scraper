@@ -100,6 +100,8 @@ class YugiohCard:
 
     def __init__(self, name: str, attributes: Dict[str, Any]) -> None:
         self.name: str = name or ""
+        self.english_name: str = self.get_first(
+            attributes.get("English name", attributes.get("english_name", name)))
         self.password: str | None = self.get_first(
             attributes.get("Password", attributes.get("password", None)))
         self.card_type: str = self.extract_fulltext_single(

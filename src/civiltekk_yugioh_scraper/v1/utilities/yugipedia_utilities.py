@@ -97,7 +97,8 @@ def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, l
     all_cards: List[YugiohCard] = []
     offset = 0
     while True:
-        print(f"Fetching data with offset {offset}...")
+        print(
+            f"Fetching data with offset {offset} for character '{character}'...")
         data = get_card_data(
             character, offset, limit)
 

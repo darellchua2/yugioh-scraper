@@ -241,6 +241,13 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 for r_code in rarity_list:
                     rarity_obj = find_rarity(r_code, yugioh_rarities)
                     if rarity_obj is None:
+                        if r_code == "Common":
+                            rarity_obj = next(
+                                (r for r in yugioh_rarities if r.prefix == "C"), None)
+                        elif r_code == "HgR":
+                            rarity_obj = next(
+                                (r for r in yugioh_rarities if r.prefix == "HGR"), None)
+                    if rarity_obj is None:
                         print(f"⚠️ Rarity not found: {r_code}")
                         continue
 
