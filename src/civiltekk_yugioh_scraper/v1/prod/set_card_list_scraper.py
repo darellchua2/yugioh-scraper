@@ -42,42 +42,83 @@ def get_wikitext(page_titles: list[str]) -> dict[str, str]:
 
 def parse_set_list(wikitext_map: dict[str, str]) -> pd.DataFrame:
     """
-    Parse card list from a dictionary of {page_title: wikitext}.
+    Parse card lists from a dictionary of {page_title: wikitext}.
     Returns a combined DataFrame of all entries.
+    Supports global and entry-specific fields like qty, description, rarities.
     """
     all_records = []
 
     for page_title, wikitext in wikitext_map.items():
-        # Extract region and default rarity
-        region_match = re.search(r'region=([A-Z]+)', wikitext)
-        rarity_match = re.search(r'rarities=([^\|\n]+)', wikitext)
+        # Find all Set list blocks
+        set_blocks = re.findall(r"{{Set list\|(.+?)}}", wikitext, re.DOTALL)
+        for block in set_blocks:
+            lines = block.strip().splitlines()
 
-        region = region_match.group(1) if region_match else None
-        default_rarities = rarity_match.group(
-            1).split(",") if rarity_match else []
+            # Extract global parameters
+            global_params = {}
+            entry_lines = []
+            for line in lines:
+                if ';' in line:
+                    entry_lines.append(line)
+                else:
+                    # Handle key=value pairs
+                    parts = line.strip().split('|')
+                    for p in parts:
+                        if '=' in p:
+                            k, v = p.split('=', 1)
+                            global_params[k.strip()] = v.strip()
 
-        # Match card lines (any set code format like AGOV-AE001)
-        card_lines = re.findall(r'\n([A-Z]+-[A-Z]+[0-9]+[^\n]*)', wikitext)
+            region = global_params.get("region", None)
+            default_rarities = [r.strip() for r in global_params.get(
+                "rarities", "").split(',') if r.strip()]
+            use_qty = global_params.get(
+                "qty", "0").lower() in ("1", "true", "yes", "y")
+            use_description = global_params.get(
+                "description", "0").lower() in ("1", "true", "yes", "y")
 
-        for line in card_lines:
-            clean_line = re.sub(r'//.*', '', line)  # remove inline comments
-            parts = [p.strip() for p in clean_line.split(';')]
-            set_card_code = parts[0] if len(parts) > 0 else None
-            card_name = parts[1] if len(parts) > 1 else None
-            rarities = parts[2] if len(
-                parts) > 2 and parts[2] else ",".join(default_rarities)
+            for line in entry_lines:
+                if not line.strip():
+                    continue
 
-            rarity_codes = [r.strip(" '\"") for r in rarities.split(
-                ',')] if rarities else default_rarities
+                # Remove inline comment
+                parts_main = line.split('//', 1)
+                entry_data = parts_main[0].strip()
+                entry_opts = parts_main[1].strip() if len(
+                    parts_main) > 1 else ""
 
-            for rarity in rarity_codes:
-                all_records.append({
-                    "set_card_code": set_card_code,
-                    "card_name": card_name,
-                    "rarity_code": rarity,
-                    "language": region,
-                    "source_page": page_title
-                })
+                fields = [p.strip() for p in entry_data.split(';')]
+                while len(fields) < 5:
+                    fields.append("")
+
+                set_card_code, name, rarity, print_code, quantity = fields[:5]
+                rarities = rarity if rarity else ",".join(default_rarities)
+                rarity_list = [r.strip() for r in rarities.split(
+                    ',')] if rarities else default_rarities
+
+                # Parse entry options
+                entry_opts_dict = {}
+                for opt in re.split(r',|\s', entry_opts):
+                    if '=' in opt:
+                        k, v = opt.split('=', 1)
+                        entry_opts_dict[k.strip()] = v.strip()
+
+                for r in rarity_list:
+                    record = {
+                        "set_card_code": set_card_code,
+                        "card_name": name,
+                        "rarity_code": r,
+                        "language": region,
+                        "print_code": print_code,
+                        "source_page": page_title
+                    }
+
+                    if use_qty:
+                        record["quantity"] = quantity
+                    if use_description:
+                        record["description"] = entry_opts_dict.get(
+                            "description", "")
+
+                    all_records.append(record)
 
     return pd.DataFrame(all_records)
 
@@ -119,8 +160,8 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                                       yugioh_rarities: List[YugiohRarity]
                                       ) -> list[YugiohSetCard]:
     """
-    Parse card list from a dictionary of {page_title: wikitext}.
-    Returns a list of YugiohSetCard objects.
+    Parse card lists from a dictionary of {page_title: wikitext}.
+    Returns a list of YugiohSetCard objects with proper rarity, description, and quantity handling.
     """
     all_records: List[YugiohSetCard] = []
 
@@ -131,46 +172,99 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
             print(f"⚠️ Set not found: {page_title}")
             continue
 
-        # Parse region and default rarities
-        region = re.search(r'region=([A-Z]+)', wikitext)
-        region_code = region.group(1) if region else None
-        default_rarities = parse_default_rarities(wikitext)
+        # Extract all Set list blocks
+        set_blocks = re.findall(r"{{Set list\|(.+?)}}", wikitext, re.DOTALL)
+        for block in set_blocks:
+            lines = block.strip().splitlines()
 
-        card_lines = re.findall(r'\n([A-Z0-9]+-[A-Z]+[0-9]+[^\n]*)', wikitext)
+            # Extract global parameters
+            global_params = {}
+            entry_lines = []
+            for line in lines:
+                if ';' in line:
+                    entry_lines.append(line)
+                else:
+                    parts = line.strip().split('|')
+                    for p in parts:
+                        if '=' in p:
+                            k, v = p.split('=', 1)
+                            global_params[k.strip()] = v.strip()
 
-        for line in card_lines:
-            clean_line = clean_wiki_line(line)
-            parts = [p.strip() for p in clean_line.split(';')]
+            region = global_params.get("region", None)
+            default_rarities = [r.strip() for r in global_params.get(
+                "rarities", "").split(',') if r.strip()]
+            use_qty = global_params.get(
+                "qty", "0").lower() in ("1", "true", "yes", "y")
+            use_description = global_params.get(
+                "description", "0").lower() in ("1", "true", "yes", "y")
 
-            set_card_code = parts[0] if len(parts) > 0 else None
-            raw_card_name = parts[1] if len(parts) > 1 else None
-            card_name = raw_card_name
-
-            if not card_name:
-                print(f"⚠️ Missing card name in line: {line}")
-                continue
-
-            yugioh_card = find_card_by_name(card_name, yugioh_cards)
-            if not yugioh_card:
-                print(f"⚠️ Card not found: {card_name}")
-                continue
-
-            rarities_str = parts[2] if len(
-                parts) > 2 else ",".join(default_rarities)
-            rarity_codes = [r.strip(" '\"") for r in rarities_str.split(',')]
-
-            for rarity_code in rarity_codes:
-                rarity = find_rarity(rarity_code, yugioh_rarities)
-                if rarity is None:
-                    print(f"⚠️ Rarity not found: {rarity_code}")
+            for line in entry_lines:
+                if not line.strip():
                     continue
 
-                all_records.append(YugiohSetCard(
-                    yugioh_card=yugioh_card,
-                    yugioh_set=yugioh_set,
-                    yugioh_rarity=rarity,
-                    code=set_card_code,
-                ))
+                parts_main = line.split('//', 1)
+                entry_data = parts_main[0].strip()
+                entry_opts = parts_main[1].strip() if len(
+                    parts_main) > 1 else ""
+
+                fields = [p.strip() for p in entry_data.split(';')]
+                while len(fields) < 5:
+                    fields.append("")
+
+                set_card_code, raw_name, rarity, print_code, quantity = fields[:5]
+                card_name = normalize_card_name(raw_name)
+                # Detect alternate artwork
+                is_alternate_artwork = any(
+                    marker in card_name.lower()
+                    for marker in ("(alternate artwork)", "(international artwork)")
+                )
+
+                # Optionally remove the marker from the display name
+                card_name = re.sub(r'\s*\((alternate|international) artwork\)',
+                                   '', card_name, flags=re.IGNORECASE).strip()
+
+                yugioh_card = find_card_by_name(card_name, yugioh_cards)
+                if not yugioh_card:
+                    print(f"⚠️ Card not found: {card_name}")
+                    continue
+
+                rarities = rarity if rarity else ",".join(default_rarities)
+                rarity_list = [r.strip() for r in rarities.split(
+                    ',')] if rarities else default_rarities
+
+                entry_opts_dict = {}
+                for opt in re.split(r',|\s', entry_opts):
+                    if '=' in opt:
+                        k, v = opt.split('=', 1)
+                        entry_opts_dict[k.strip()] = v.strip()
+
+                for r_code in rarity_list:
+                    rarity_obj = find_rarity(r_code, yugioh_rarities)
+                    if rarity_obj is None:
+                        print(f"⚠️ Rarity not found: {r_code}")
+                        continue
+
+                    set_card = YugiohSetCard(
+                        yugioh_card=yugioh_card,
+                        yugioh_set=yugioh_set,
+                        yugioh_rarity=rarity_obj,
+                        code=set_card_code,
+                    )
+
+                    # Add optional fields
+                    # if use_qty:
+                    #     try:
+                    #         set_card.quantity = int(quantity)
+                    #     except ValueError:
+                    #         set_card.quantity = None
+                    # if use_description:
+                    #     set_card.description = entry_opts_dict.get(
+                    #         "description", "")
+
+                    # 🔍 Set the alternate artwork flag
+                    set_card.is_alternate_artwork = is_alternate_artwork
+
+                    all_records.append(set_card)
 
     return all_records
 
