@@ -216,11 +216,11 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 # Detect alternate artwork
                 is_alternate_artwork = any(
                     marker in card_name.lower()
-                    for marker in ("(alternate artwork)", "(international artwork)")
+                    for marker in ("(alternate artwork)", "(international artwork)", "(new artwork)")
                 )
 
                 # Optionally remove the marker from the display name
-                card_name = re.sub(r'\s*\((alternate|international) artwork\)',
+                card_name = re.sub(r'\s*\((alternate|international|9th|8th|new|7th) artwork\)',
                                    '', card_name, flags=re.IGNORECASE).strip()
 
                 yugioh_card = find_card_by_name(card_name, yugioh_cards)
