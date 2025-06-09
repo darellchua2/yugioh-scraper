@@ -182,8 +182,7 @@ def main() -> None:
     """
     # Characters to iterate over: uppercase letters, digits, and specific special characters
     search_characters = list(string.ascii_uppercase) + \
-        list(string.digits) + ["\"", "1", "3", "4", "7", "8", "@"]
-    # search_characters = ['A']
+        list(string.digits) + ["\"", "1", "3", "4", "7", "8", "@", "#"]
 
     # Output CSV file
     output_file = "yugioh_cards.csv"

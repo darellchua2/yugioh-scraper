@@ -97,31 +97,30 @@ def run_request_until_response(url: str, params: dict, max_counter: int = 5) -> 
     return response
 
 
-def run_yugipedia_request_until_response(url: str, params: dict, headers=HEADERS, max_counter: int = 5) -> requests.Response | None:
+def run_yugipedia_request_until_response(url: str, params: dict, headers=HEADERS, max_counter: int = 5) -> requests.Response:
+    headers = headers or {}
     response = None
     counter = 0
+
     while not response and counter < max_counter:
-        time.sleep(1)
+        time.sleep(0.5)
         try:
-            response = requests.get(url, timeout=10)
-            print(url)
-        except requests.exceptions.ReadTimeout as e:
-            error_string = ""
-            for key, value in params.items():
-                error_string = error_string + \
-                    "{key}:{value}".format(key=key, value=value) + "\n"
-            # logging.exception("{error_string}".format(
-            #     error_string=error_string))
-            print(
-                "ReadTimeoutError: {url} - Counter {counter}".format(url=url, counter=counter))
+            response = requests.get(
+                url, params=params, timeout=10, headers=headers)
+            return response
+        except requests.exceptions.ReadTimeout:
+            print(f"ReadTimeoutError: {url} - Counter {counter}")
         finally:
             counter += 1
 
-    if counter == max_counter:
-        print("Exceeded trying {max_counter} times for {url}".format(
-            url=url, max_counter=max_counter))
+    print(f"Exceeded trying {max_counter} times for {url}")
 
-    return response
+    # Create a dummy response with an error status
+    fake_response = requests.Response()
+    fake_response.status_code = 504  # Gateway Timeout
+    fake_response._content = b"Request failed after retries"
+    fake_response.url = url
+    return fake_response
 
 
 def run_wiki_request_until_response(url: str, header: dict, params: dict, max_counter: int = 5) -> Optional[dict]:

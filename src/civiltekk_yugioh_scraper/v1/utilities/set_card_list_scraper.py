@@ -6,7 +6,7 @@ import unicodedata
 
 from ..config import MEDIAWIKI_URL, HEADERS
 from ..models.yugipedia_models import YugiohCard, YugiohSetCard, YugiohSet, YugiohRarity
-from ..utilities.misc_utilities import run_wiki_request_until_response
+from .misc_utilities import run_wiki_request_until_response
 
 
 def get_wikitext(page_titles: list[str]) -> dict[str, str]:
@@ -143,9 +143,10 @@ def parse_default_rarities(wikitext: str) -> List[str]:
     return []
 
 
-def find_card_by_name(name: str, cards: List[YugiohCard]) -> YugiohCard | None:
-    name = normalize_card_name(name)
-    card_lookup = {normalize_card_name(c.name): c for c in cards}
+def find_card_by_english_name(name: str, cards: List[YugiohCard]) -> YugiohCard | None:
+    name = normalize_card_name(name).replace(
+        " (card)", "").replace(" (Arkana)", "")
+    card_lookup = {normalize_card_name(c.english_name): c for c in cards}
     return card_lookup.get(name, None)
 
 
@@ -223,7 +224,8 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 card_name = re.sub(r'\s*\((alternate|international|9th|8th|new|7th) artwork\)',
                                    '', card_name, flags=re.IGNORECASE).strip()
 
-                yugioh_card = find_card_by_name(card_name, yugioh_cards)
+                yugioh_card = find_card_by_english_name(
+                    card_name, yugioh_cards)
                 if not yugioh_card:
                     print(f"⚠️ Card not found: {card_name}")
                     continue

@@ -1,7 +1,7 @@
 import os
 import time
 
-from ..prod.set_card_list_scraper import get_yugioh_set_cards_from_set_card_list_names
+from .set_card_list_scraper import get_yugioh_set_cards_from_set_card_list_names
 
 from ..utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
 
@@ -993,7 +993,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 
     # to remove after testing
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO", "BC"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
