@@ -1,7 +1,7 @@
 import requests
 from typing import List, Dict, Any, Optional
 
-from ...utilities.misc_utilities import run_request_until_response
+from ...utilities.misc_utilities import run_request_until_response, run_yugipedia_request_until_response
 from ...models.yugipedia_models import YugiohCard
 from ...config import HEADERS
 import concurrent.futures
@@ -64,10 +64,9 @@ def fetch_card_data(character: str, offset: int = 0, limit: int = 500) -> Option
     params = card_semantic_search_params(character, offset, limit)
 
     try:
-        # response = requests.get(base_url, headers=HEADERS,
-        #                         params=params, timeout=10)
-        response = run_request_until_response(base_url, params)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
+        response = run_yugipedia_request_until_response(base_url, params)
+        # Raise HTTPError for bad responses (4xx and 5xx)
+        response.raise_for_status()
 
         # Check if the response contains valid JSON
         try:
