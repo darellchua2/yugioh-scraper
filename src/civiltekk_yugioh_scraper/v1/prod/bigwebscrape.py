@@ -69,8 +69,6 @@ def replace_the_word_new_in_set(x: str):
 
 
 def get_bigweb_objs2(page_number):
-    # page_number = overall_obj['page_number']
-    # date_updated = overall_obj['date_updated']
     bigweb_set_cards = []
     final_obj = {}
 

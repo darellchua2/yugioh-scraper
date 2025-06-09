@@ -1,7 +1,7 @@
 import os
 import time
 
-from ..prod.set_card_list_scraper import get_yugioh_set_cards_from_set_card_list_names
+from .set_card_list_scraper import get_yugioh_set_cards_from_set_card_list_names
 
 from ..utilities.yugipedia.yugipedia_scraper_rarity_v2 import get_yugioh_rarities_v2
 
@@ -97,7 +97,8 @@ def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, l
     all_cards: List[YugiohCard] = []
     offset = 0
     while True:
-        print(f"Fetching data with offset {offset}...")
+        print(
+            f"Fetching data with offset {offset} for character '{character}'...")
         data = get_card_data(
             character, offset, limit)
 
@@ -992,7 +993,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 
     # to remove after testing
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["EP15", "ADDR", "AGOV", "ETCO"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO", "BC"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
@@ -1065,7 +1066,8 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
     ygo_set_card_with_code_dict = {
         "{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
                                                                set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
-                                                               card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
+                                                               card_name=ygo_set_card.card.name.replace(
+                                                                   " (card)", "") if ygo_set_card.card is not None else "",
                                                                rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
     }
     for ygo_set_card_image in yugioh_set_cards_with_images:
@@ -1080,7 +1082,8 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
     ygo_set_card_final_dict = {
         "{region}|{set_name}|{card_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
                                                                set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
-                                                               card_name=ygo_set_card.card.name if ygo_set_card.card is not None else "",
+                                                               card_name=ygo_set_card.card.name.replace(
+                                                                   " (card)", "") if ygo_set_card.card is not None else "",
                                                                rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_final
     }
     for ygo_set_card_with_code in yugioh_set_cards_with_codes:

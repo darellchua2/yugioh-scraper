@@ -5,7 +5,7 @@ import time
 import os
 import platform
 from typing import Generator, Tuple, Optional
-from ..config import JAPANESE_CHARS_REGEX, WINDOWS_EXPORT_PATH, LINUX_EXPORT_PATH, READ_TIMEOUT_ERROR, JSON_ERROR, BASE_TEKKX_PRODUCT_URL, BIGWEB_DEFAULT_HEADER
+from ..config import JAPANESE_CHARS_REGEX, WINDOWS_EXPORT_PATH, LINUX_EXPORT_PATH, READ_TIMEOUT_ERROR, JSON_ERROR, BASE_TEKKX_PRODUCT_URL, BIGWEB_DEFAULT_HEADER, HEADERS
 
 
 def check_for_jap_chars(x: str) -> bool:
@@ -97,39 +97,30 @@ def run_request_until_response(url: str, params: dict, max_counter: int = 5) -> 
     return response
 
 
-def run_bigweb_request_until_response(url: str, params: dict, max_counter: int = 5, headers: dict = BIGWEB_DEFAULT_HEADER) -> Optional[requests.Response]:
-    """
-    Runs an HTTP GET request with retries if it times out.
-
-    Args:
-        url (str): The URL to request.
-        params (dict): The request parameters.
-        max_counter (int): Maximum number of retry attempts.
-
-    Returns:
-        Optional[requests.Response]: The HTTP response, or None if the request fails.
-    """
+def run_yugipedia_request_until_response(url: str, params: dict, headers=HEADERS, max_counter: int = 5) -> requests.Response:
+    headers = headers or {}
     response = None
     counter = 0
-    while counter < max_counter:
-        time.sleep(1)
+
+    while not response and counter < max_counter:
+        time.sleep(0.5)
         try:
-            print(url, params)
             response = requests.get(
                 url, params=params, timeout=10, headers=headers)
-            if response.status_code == 200:
-                break
-        except requests.exceptions.ReadTimeout as e:
-            log_error(params, READ_TIMEOUT_ERROR, url, counter)
-        except Exception as e:
-            log_error(params, str(e), url, counter)
+            return response
+        except requests.exceptions.ReadTimeout:
+            print(f"ReadTimeoutError: {url} - Counter {counter}")
         finally:
             counter += 1
 
-    if counter == max_counter:
-        logging.error(f"Exceeded trying {max_counter} times for {url}")
+    print(f"Exceeded trying {max_counter} times for {url}")
 
-    return response
+    # Create a dummy response with an error status
+    fake_response = requests.Response()
+    fake_response.status_code = 504  # Gateway Timeout
+    fake_response._content = b"Request failed after retries"
+    fake_response.url = url
+    return fake_response
 
 
 def run_wiki_request_until_response(url: str, header: dict, params: dict, max_counter: int = 5) -> Optional[dict]:
