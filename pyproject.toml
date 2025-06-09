@@ -1,6 +1,6 @@
 [project]
 name = "civiltekk-yugioh-scraper"
-version = "0.3.4"
+version = "0.3.5"
 description = ""
 authors = [
     {name = "darellchua",email = "darellchua2@gmail.com"}
