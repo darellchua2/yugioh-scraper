@@ -6,3 +6,4 @@ myvenv*/
 .env
 output/
 *.csv
+test.txt
