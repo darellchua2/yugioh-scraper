@@ -330,7 +330,7 @@ class YugiohSetCard:
             if self.card and self.set and self.rarity:
                 desc: str = self.card.lore
 
-                english_name_wordpress: str = self.card.name if not self.is_alternate_artwork else self.card.name + \
+                english_name_wordpress: str = self.card.english_name if not self.is_alternate_artwork else self.card.name + \
                     (" (alternate art)" if self.is_alternate_artwork else None)  # type: ignore
                 set_card_code_updated: str = self.code + \
                     "b" if self.is_alternate_artwork and self.code else self.code  # type: ignore
@@ -342,6 +342,7 @@ class YugiohSetCard:
                     "set_card_name_combined": english_name_wordpress,
                     "set_card_code_updated": set_card_code_updated,
                     "card_name": self.card.name,
+                    "english_name": self.card.english_name,
                     "rarity_name": self.rarity.name,
                     "set_name": self.set.name,
                     "set_card_code": self.code,
