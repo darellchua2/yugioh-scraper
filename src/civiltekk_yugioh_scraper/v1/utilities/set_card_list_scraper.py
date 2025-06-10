@@ -242,7 +242,7 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 fields = [p.strip() for p in entry_data.split(';')]
 
                 # Determine how to interpret fields
-                if is_noabbr or len(fields) == 1:
+                if is_noabbr:
                     set_card_code = None
                     raw_name = fields[0]
                     rarity = ",".join(default_rarities)
@@ -291,13 +291,6 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                         print(f"⚠️ Rarity not found: {r_code}")
                         continue
 
-                    set_card = YugiohSetCard(
-                        yugioh_card=yugioh_card,
-                        yugioh_set=yugioh_set,
-                        yugioh_rarity=rarity_obj,
-                        code=set_card_code,
-                    )
-
                     # Add optional fields
                     # if use_qty:
                     #     try:
@@ -308,9 +301,15 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                     #     set_card.description = entry_opts_dict.get(
                     #         "description", "")
 
-                    set_card.is_alternate_artwork = is_alternate_artwork
-
-                    all_records.append(set_card)
+                    if rarity_obj and yugioh_card and yugioh_set:
+                        set_card = YugiohSetCard(
+                            yugioh_card=yugioh_card,
+                            yugioh_set=yugioh_set,
+                            yugioh_rarity=rarity_obj,
+                            code=set_card_code,
+                            is_alternate_artwork=is_alternate_artwork
+                        )
+                        all_records.append(set_card)
 
     return all_records
 
