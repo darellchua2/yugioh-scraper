@@ -1067,7 +1067,7 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
         "{region}|{set_name}|{card_english_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
                                                                        set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
                                                                        card_english_name=ygo_set_card.card.english_name if ygo_set_card.card is not None else "",
-                                                                       rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
+                                                                       rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes if not ygo_set_card.code in (None, "")
     }
     for ygo_set_card_image in yugioh_set_cards_with_images:
         ygo_set_card_with_code_found = ygo_set_card_with_code_dict.get("{region}|{set_name}|{card_english_name}|{rarity_name}".format(region=ygo_set_card_image.set.region if ygo_set_card_image.set is not None else "",

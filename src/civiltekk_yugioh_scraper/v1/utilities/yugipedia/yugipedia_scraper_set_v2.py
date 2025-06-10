@@ -131,7 +131,7 @@ def fetch_json_with_generator(url: str, params: Dict[str, Any]) -> List[Dict[str
                 raise Exception(
                     f"Failed to fetch data after multiple retries: {e}")
             print(f"Retrying... ({3 - retries}/3)")
-            time.sleep(2)
+            time.sleep(1)
 
     return combined_results
 

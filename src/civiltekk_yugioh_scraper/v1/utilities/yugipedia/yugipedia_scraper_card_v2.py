@@ -7,7 +7,8 @@ from ...config import HEADERS
 import concurrent.futures
 import string
 import csv
-import time
+import requests
+from typing import Optional, Dict, Any
 
 
 def card_semantic_search_params(character: str, offset: int, limit: int = 500) -> Dict[str, Any]:
@@ -80,6 +81,51 @@ def fetch_card_data(character: str, offset: int = 0, limit: int = 500) -> Option
         return None
 
 
+def fetch_card_data_v2(character: str, offset: int = 0, limit: int = 500) -> Optional[Dict[str, Any]]:
+    """
+    Fetch card data from the Yugipedia MediaWiki API.
+    Handles errors gracefully to ensure the script continues.
+    """
+    base_url = "https://yugipedia.com/api.php"
+    params = card_semantic_search_params_v2(character, offset, limit)
+
+    try:
+        response = requests.get(base_url, params=params,
+                                headers=HEADERS, timeout=60)
+        # Raise HTTPError for bad responses (4xx and 5xx)
+        response.raise_for_status()
+
+        # Check if the response contains valid JSON
+        try:
+            return response.json()
+        except ValueError as ve:
+            print(f"Invalid JSON response for character '{character}': {ve}")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred while fetching data for '{character}': {e}")
+        return None
+
+
+def card_semantic_search_params_v2(character: str, offset: int, limit: int = 500) -> Dict[str, Any]:
+    """
+    Generate search parameters for Yugipedia MediaWiki API.
+    """
+    return {
+        "action": "query",                   # Action for querying the API
+        "format": "json",                    # Desired response format
+        "list": "search",                    # Perform a search query
+        "srsearch": f'[[Page type::Card page]][[Page name::~{character}*]][[Release::Yu-Gi-Oh! Official Card Game]]',
+        # Search within the main namespace (0 = articles)
+        "srnamespace": "0",
+        "srlimit": limit,                    # Limit the number of results returned
+        "sroffset": offset,                  # Offset for pagination
+        "prop": "info|pageimages|extracts",   # Retrieve page info, image, and extract
+        "inprop": "url",                     # Include the URL in the result
+        "pithumbsize": 100,                  # Thumbnail size for images
+    }
+
+
 def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[YugiohCard]:
     """
     Collect all card data for the given character by iterating through pages.
@@ -89,8 +135,8 @@ def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[Yug
 
     while True:
         print(f"Fetching data with offset {offset}...")
-        time.sleep(0.5)
-        data = fetch_card_data(character, offset, limit)
+        # time.sleep(0.5)
+        data = fetch_card_data_v2(character, offset, limit)
 
         if data is None or "results" not in data:
             print("No more data found or an error occurred.")
