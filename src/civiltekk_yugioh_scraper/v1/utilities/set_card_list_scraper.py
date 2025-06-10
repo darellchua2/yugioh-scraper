@@ -44,24 +44,23 @@ def parse_set_list(wikitext_map: dict[str, str]) -> pd.DataFrame:
     """
     Parse card lists from a dictionary of {page_title: wikitext}.
     Returns a combined DataFrame of all entries.
-    Supports global and entry-specific fields like qty, description, rarities.
+    Supports `noabbr`, entry-specific options, quantity, and description.
     """
     all_records = []
 
     for page_title, wikitext in wikitext_map.items():
-        # Find all Set list blocks
         set_blocks = re.findall(r"{{Set list\|(.+?)}}", wikitext, re.DOTALL)
+
         for block in set_blocks:
             lines = block.strip().splitlines()
 
-            # Extract global parameters
+            # Extract global params
             global_params = {}
             entry_lines = []
             for line in lines:
-                if ';' in line:
+                if ';' in line or line.strip():
                     entry_lines.append(line)
                 else:
-                    # Handle key=value pairs
                     parts = line.strip().split('|')
                     for p in parts:
                         if '=' in p:
@@ -75,27 +74,57 @@ def parse_set_list(wikitext_map: dict[str, str]) -> pd.DataFrame:
                 "qty", "0").lower() in ("1", "true", "yes", "y")
             use_description = global_params.get(
                 "description", "0").lower() in ("1", "true", "yes", "y")
+            is_noabbr = "noabbr" in global_params.get("options", "").lower()
 
             for line in entry_lines:
                 if not line.strip():
                     continue
 
-                # Remove inline comment
                 parts_main = line.split('//', 1)
                 entry_data = parts_main[0].strip()
                 entry_opts = parts_main[1].strip() if len(
                     parts_main) > 1 else ""
 
                 fields = [p.strip() for p in entry_data.split(';')]
-                while len(fields) < 5:
-                    fields.append("")
 
-                set_card_code, name, rarity, print_code, quantity = fields[:5]
+                # Determine field parsing based on noabbr or length
+                if is_noabbr or len(fields) == 1:
+                    set_card_code = None
+                    raw_name = fields[0]
+                    rarity = ",".join(default_rarities)
+                    print_code = ""
+                    quantity = ""
+                else:
+                    while len(fields) < 5:
+                        fields.append("")
+                    set_card_code, raw_name, rarity, print_code, quantity = fields[:5]
+
+                card_name = normalize_card_name(raw_name)
+
+                # Detect alternate artwork
+                is_alternate_artwork = any(
+                    marker in card_name.lower()
+                    for marker in (
+                        "(alternate artwork)",
+                        "(international artwork)",
+                        "(new artwork)",
+                        "(9th artwork)",
+                        "(8th artwork)",
+                        "(7th artwork)",
+                    )
+                )
+                card_name = re.sub(
+                    r'\s*\((alternate|international|9th|8th|new|7th) artwork\)',
+                    '',
+                    card_name,
+                    flags=re.IGNORECASE
+                ).strip()
+
                 rarities = rarity if rarity else ",".join(default_rarities)
                 rarity_list = [r.strip() for r in rarities.split(
                     ',')] if rarities else default_rarities
 
-                # Parse entry options
+                # Parse entry options (description, etc.)
                 entry_opts_dict = {}
                 for opt in re.split(r',|\s', entry_opts):
                     if '=' in opt:
@@ -105,18 +134,19 @@ def parse_set_list(wikitext_map: dict[str, str]) -> pd.DataFrame:
                 for r in rarity_list:
                     record = {
                         "set_card_code": set_card_code,
-                        "card_name": name,
+                        "card_name": card_name,
                         "rarity_code": r,
                         "language": region,
                         "print_code": print_code,
-                        "source_page": page_title
+                        "source_page": page_title,
+                        "is_alternate_artwork": is_alternate_artwork,
                     }
 
-                    if use_qty:
-                        record["quantity"] = quantity
-                    if use_description:
-                        record["description"] = entry_opts_dict.get(
-                            "description", "")
+                    # if use_qty:
+                    #     record["quantity"] = quantity
+                    # if use_description:
+                    #     record["description"] = entry_opts_dict.get(
+                    #         "description", "")
 
                     all_records.append(record)
 
@@ -182,7 +212,7 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
             global_params = {}
             entry_lines = []
             for line in lines:
-                if ';' in line:
+                if ';' in line or line.strip():  # Might not have semicolons in noabbr mode
                     entry_lines.append(line)
                 else:
                     parts = line.strip().split('|')
@@ -198,6 +228,7 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 "qty", "0").lower() in ("1", "true", "yes", "y")
             use_description = global_params.get(
                 "description", "0").lower() in ("1", "true", "yes", "y")
+            is_noabbr = "noabbr" in global_params.get("options", "").lower()
 
             for line in entry_lines:
                 if not line.strip():
@@ -209,18 +240,25 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                     parts_main) > 1 else ""
 
                 fields = [p.strip() for p in entry_data.split(';')]
-                while len(fields) < 5:
-                    fields.append("")
 
-                set_card_code, raw_name, rarity, print_code, quantity = fields[:5]
+                # Determine how to interpret fields
+                if is_noabbr or len(fields) == 1:
+                    set_card_code = None
+                    raw_name = fields[0]
+                    rarity = ",".join(default_rarities)
+                    print_code = ""
+                    quantity = ""
+                else:
+                    while len(fields) < 5:
+                        fields.append("")
+                    set_card_code, raw_name, rarity, print_code, quantity = fields[:5]
+
+                # Normalize name and check for alternate art
                 card_name = normalize_card_name(raw_name)
-                # Detect alternate artwork
                 is_alternate_artwork = any(
                     marker in card_name.lower()
-                    for marker in ("(alternate artwork)", "(international artwork)", "(new artwork)")
+                    for marker in ("(alternate artwork)", "(international artwork)", "(new artwork)", "(9th artwork)", "(8th artwork)", "(7th artwork)")
                 )
-
-                # Optionally remove the marker from the display name
                 card_name = re.sub(r'\s*\((alternate|international|9th|8th|new|7th) artwork\)',
                                    '', card_name, flags=re.IGNORECASE).strip()
 
@@ -270,7 +308,6 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                     #     set_card.description = entry_opts_dict.get(
                     #         "description", "")
 
-                    # 🔍 Set the alternate artwork flag
                     set_card.is_alternate_artwork = is_alternate_artwork
 
                     all_records.append(set_card)
