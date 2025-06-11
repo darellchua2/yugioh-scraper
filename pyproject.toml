@@ -1,7 +1,7 @@
 [project]
 name = "civiltekk-yugioh-scraper"
-version = "0.4.0"
-description = ""
+version = "0.5.0"
+description = "A library to scrape Yu-Gi-Oh! inventory"
 authors = [
     {name = "darellchua",email = "darellchua2@gmail.com"}
 ]
@@ -23,6 +23,10 @@ dependencies = [
 
 [tool.poetry]
 package-mode = true
+# Include the package directory here
+packages = [
+    { include = "civiltekk_yugioh_scraper", from = "src" }
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
