@@ -22,3 +22,17 @@ Set Card Lists:Yu-Gi-Oh! World Championship 2006 prize cards (OCG-AE)
 WCPS-AE603; Seiyaryu; Super Rare //@Print::[[Original Print]]
 }}
 
+----------------
+Set Card Lists:Hidden Chapter Pack 2023 Vol.3 (OCG-JA)
+{{Set page header}}
+
+{{Set list|region=JA|rarities=Super Rare|
+23HP-JA301; The Supremacy Sun
+23HP-JA302; D/D/D Rebel King Leonidas
+23HP-JA303; Blood Mefist
+23HP-JA304; White Aura Bihamut
+23HP-JA305; Number 50: Blackship of Corn
+23HP-JA306; Raidraptor - Revolution Falcon - Air Raid
+}}
+
+--------------
