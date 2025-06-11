@@ -1045,7 +1045,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
                 get_yugioh_set_cards_from_set_card_list_names, split_list, yugioh_sets, yugioh_cards, yugioh_rarities))
 
         for future in concurrent.futures.as_completed(futures):
-            time.sleep(0.5)
+            time.sleep(1.0)
             result = future.result()
             yugioh_set_cards_v2_from_set_card_lists.extend(result)
 
