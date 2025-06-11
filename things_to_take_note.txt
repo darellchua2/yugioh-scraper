@@ -1,0 +1,24 @@
+Editing Set Card Lists:World Ranking Promos: Series 3 (OCG-JP)
+{{Set page header}}
+
+==World Ranking	==
+{{Set list|region=JP|rarities=Common, Normal Parallel Rare|columns=Date|
+PC3-001; Magic Drain // @Date::April 2004
+PC3-004; Fire Princess // @Date::February 2004
+PC3-005; Jar of Greed // @Date::March 2004
+}}
+
+==Japan Ranking	==
+{{Set list|region=JP|rarities=Common, Normal Parallel Rare|columns=Date|
+PC3-002; Hayabusa Knight // @Date::December 2003
+PC3-003; Mad Sword Beast // @Date::January 2004
+}}
+
+----------------
+Set Card Lists:Yu-Gi-Oh! World Championship 2006 prize cards (OCG-AE)
+{{Set page header}}
+
+{{Set list|region=AE|columns=Print|
+WCPS-AE603; Seiyaryu; Super Rare //@Print::[[Original Print]]
+}}
+
