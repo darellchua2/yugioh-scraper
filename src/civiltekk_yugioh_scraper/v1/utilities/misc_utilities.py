@@ -139,7 +139,7 @@ def run_wiki_request_until_response(url: str, header: dict, params: dict, max_co
     response_json: dict | None = None
     counter = 0
     while not response_json and counter < max_counter:
-        time.sleep(0.5)
+        time.sleep(1.0)
         try:
             logging.info(f"Running URL: {url}")
             print(url, params)

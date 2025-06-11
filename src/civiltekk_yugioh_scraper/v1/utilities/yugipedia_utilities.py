@@ -992,8 +992,8 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
         yugioh_card_obj) for yugioh_card_obj in yugioh_card_objs_from_db]
 
     # to remove after testing
-    # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO", "BC"]]
+    yugioh_sets = [
+        ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO", "BC"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
@@ -1043,6 +1043,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
                 get_yugioh_set_cards_from_set_card_list_names, split_list, yugioh_sets, yugioh_cards, yugioh_rarities))
 
         for future in concurrent.futures.as_completed(futures):
+            time.sleep(0.5)
             result = future.result()
             yugioh_set_cards_v2_from_set_card_lists.extend(result)
 
@@ -1270,8 +1271,8 @@ def yugipedia_main():
     else:
         df = pd.DataFrame(db_data)
         df.to_csv(os.path.join(output_folder, "yugioh_cards.csv"), index=False)
-        upload_data(df, table_name=TABLE_YUGIOH_CARDS,
-                    if_exist="replace", db_name='yugioh_data')
+        # upload_data(df, table_name=TABLE_YUGIOH_CARDS,
+        #             if_exist="replace", db_name='yugioh_data')
 
         tekkx_cards = [
             YugiohCard.get_yugipedia_dict_from_yugioh_card(card) for card in yugioh_cards]
