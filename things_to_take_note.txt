@@ -36,3 +36,44 @@ Set Card Lists:Hidden Chapter Pack 2023 Vol.3 (OCG-JA)
 }}
 
 --------------
+Set Card Lists:Structure Deck: Warrior's Triumph (OCG-JP)
+{{Set page header}}
+
+{{Set list|region=JP|rarities=C|qty=1|print=Reprint|
+SD5-JP001; Gilford the Legend; UR; New
+SD5-JP002; Warrior Lady of the Wasteland;; New
+SD5-JP003; Dark Blade
+SD5-JP004; Goblin Attack Force
+SD5-JP005; Gearfried the Iron Knight; C;; 2
+SD5-JP006; Swift Gaia the Fierce Knight
+SD5-JP007; Obnoxious Celtic Guard
+SD5-JP008; Command Knight
+SD5-JP009; Marauding Captain; C;; 2
+SD5-JP010; Exiled Force
+SD5-JP011; D.D. Warrior Lady
+SD5-JP012; Mataza the Zapper
+SD5-JP013; Mystic Swordsman LV2
+SD5-JP014; Mystic Swordsman LV4
+SD5-JP015; Ninja Grandmaster Sasuke
+SD5-JP016; Gearfried the Swordmaster
+SD5-JP017; Armed Samurai - Ben Kei
+SD5-JP018; Divine Sword - Phoenix Blade;; New
+SD5-JP019; Snatch Steal
+SD5-JP020; Mystical Space Typhoon
+SD5-JP021; Giant Trunade
+SD5-JP022; Lightning Blade
+SD5-JP023; Heavy Storm
+SD5-JP024; Reinforcement of the Army; C;; 2
+SD5-JP025; The Warrior Returning Alive
+SD5-JP026; Fusion Sword Murasame Blade
+SD5-JP027; Wicked-Breaking Flamberge - Baou
+SD5-JP028; Fairy of the Spring
+SD5-JP029; Reload; C;; 2
+SD5-JP030; Lightning Vortex
+SD5-JP031; Swords of Concealing Light
+SD5-JP032; Release Restraint
+SD5-JP033; Call of the Haunted
+SD5-JP034; Magic Jammer
+SD5-JP035; Royal Decree
+SD5-JP036; Blast with Chain
+}}

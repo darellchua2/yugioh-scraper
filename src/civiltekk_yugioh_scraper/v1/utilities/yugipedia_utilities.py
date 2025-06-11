@@ -992,8 +992,10 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
         yugioh_card_obj) for yugioh_card_obj in yugioh_card_objs_from_db]
 
     # to remove after testing
-    yugioh_sets = [
-        ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO", "BC"]]
+    # yugioh_sets = [
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC"]]
+    # yugioh_sets = [
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
@@ -1064,6 +1066,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCard],
                                  yugioh_set_cards_with_codes: List[YugiohSetCard]):
     yugioh_set_cards_final: List[YugiohSetCard] = []
+
     ygo_set_card_with_code_dict = {
         "{region}|{set_name}|{card_english_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
                                                                        set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
