@@ -1,7 +1,4 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
@@ -10,7 +7,22 @@
       "request": "launch",
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
-      "args": ["export"]
+      "args": ["export"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
     },
     {
       "name": "Upload Inventory Excel",
@@ -18,7 +30,22 @@
       "request": "launch",
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
-      "args": ["upload"]
+      "args": ["upload"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
     },
     {
       "name": "scrape_yugipedia_set_cards",
@@ -26,7 +53,22 @@
       "request": "launch",
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
-      "args": ["scrape_yugipedia_set_cards"]
+      "args": ["scrape_yugipedia_set_cards"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
     },
     {
       "name": "scrape_yugipedia",
@@ -34,7 +76,22 @@
       "request": "launch",
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
-      "args": ["scrape_yugipedia"]
+      "args": ["scrape_yugipedia"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
     },
     {
       "name": "test_scrape",
@@ -42,7 +99,22 @@
       "request": "launch",
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
-      "args": ["test_scrape"]
+      "args": ["test_scrape"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
     }
   ]
 }
