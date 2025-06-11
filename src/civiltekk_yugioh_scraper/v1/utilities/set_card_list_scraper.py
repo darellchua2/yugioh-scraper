@@ -242,6 +242,12 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 entry_opts = parts_main[1].strip() if len(
                     parts_main) > 1 else ""
 
+                # Check for alternate artwork in the description (after //)
+                is_alternate_artwork = any(
+                    marker in entry_opts.lower()
+                    for marker in ("alternate artwork", "international artwork", "new artwork", "9th artwork", "8th artwork", "7th artwork")
+                )
+
                 # Split entry data into fields (card code, name, rarity, print code, quantity)
                 fields = [p.strip() for p in entry_data.split(';')]
 
@@ -294,7 +300,7 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                         yugioh_set=yugioh_set,
                         yugioh_rarity=rarity_obj,
                         code=set_card_code,
-                        is_alternate_artwork=False  # Placeholder, handle alternate artwork if needed
+                        is_alternate_artwork=is_alternate_artwork  # Set alternate artwork flag
                     )
                     # Optionally store quantity or description if needed
                     all_records.append(set_card)
