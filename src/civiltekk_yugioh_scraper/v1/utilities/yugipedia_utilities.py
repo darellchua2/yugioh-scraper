@@ -1274,8 +1274,8 @@ def yugipedia_main():
     else:
         df = pd.DataFrame(db_data)
         df.to_csv(os.path.join(output_folder, "yugioh_cards.csv"), index=False)
-        # upload_data(df, table_name=TABLE_YUGIOH_CARDS,
-        #             if_exist="replace", db_name='yugioh_data')
+        upload_data(df, table_name=TABLE_YUGIOH_CARDS,
+                    if_exist="replace", db_name='yugioh_data')
 
         tekkx_cards = [
             YugiohCard.get_yugipedia_dict_from_yugioh_card(card) for card in yugioh_cards]
