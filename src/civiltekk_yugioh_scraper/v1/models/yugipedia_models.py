@@ -296,238 +296,75 @@ class YugiohSetCard:
         return self.__dict__
 
     def get_dict_from_yugioh_set_card(self) -> dict | None:
-        if isinstance(self, YugiohSetCard):
-            if self.card and self.set and self.rarity:
-                obj = {
-                    "card_name": self.card.name,
-                    "card_code": self.code,
-                    "card_rarity": self.rarity.name,
-                    "card_set": self.set.name,
-                    "image_url": self.image_url,
-                    "image_file": self.image_file,
-                    "is_alternate_artwork": self.is_alternate_artwork,
-                }
-                return obj
-            else:
-                card_name = self.card.name if self.card is not None else None
-                card_rarity = self.rarity.name if self.rarity is not None else None
-                card_set = self.set.name if self.set is not None else None
-                obj = {
-                    "card_name": card_name,
-                    "card_code": self.code,
-                    "card_rarity": card_rarity,
-                    "card_set": card_set,
-                    "image_url": self.image_url,
-                    "image_file": self.image_file,
-                    "is_alternate_artwork": self.is_alternate_artwork,
-                }
-                return obj
+        if self.card and self.set and self.rarity:
+            obj = {
+                "card_name": self.card.name,
+                "card_code": self.code,
+                "card_rarity": self.rarity.name,
+                "card_set": self.set.name,
+                "image_url": self.image_url,
+                "image_file": self.image_file,
+                "is_alternate_artwork": self.is_alternate_artwork,
+            }
+            return obj
         else:
-            return None
+            card_name = self.card.name if self.card is not None else None
+            card_rarity = self.rarity.name if self.rarity is not None else None
+            card_set = self.set.name if self.set is not None else None
+            obj = {
+                "card_name": card_name,
+                "card_code": self.code,
+                "card_rarity": card_rarity,
+                "card_set": card_set,
+                "image_url": self.image_url,
+                "image_file": self.image_file,
+                "is_alternate_artwork": self.is_alternate_artwork,
+            }
+            return obj
 
     def get_tekkx_wordpress_dict_from_yugioh_set_card(self) -> dict | None:
-        if isinstance(self, YugiohSetCard):
-            if self.card and self.set and self.rarity:
-                desc: str = self.card.lore
+        if self.card and self.set and self.rarity:
+            desc: str = self.card.lore
 
-                english_name_wordpress: str = self.card.english_name if not self.is_alternate_artwork else self.card.name + \
-                    (" (alternate art)" if self.is_alternate_artwork else None)  # type: ignore
-                set_card_code_updated: str = self.code + \
-                    "b" if self.is_alternate_artwork and self.code else self.code  # type: ignore
+            english_name_wordpress: str = self.card.english_name if not self.is_alternate_artwork else self.card.name + \
+                (" (alternate art)" if self.is_alternate_artwork else None)  # type: ignore
+            set_card_code_updated: str = self.code + \
+                "b" if self.is_alternate_artwork and self.code else self.code  # type: ignore
 
-                archetypes_list = ast.literal_eval(
-                    self.card.archetypes.strip())
+            archetypes_list = ast.literal_eval(
+                self.card.archetypes.strip())
 
-                obj = {
-                    "set_card_name_combined": english_name_wordpress,
-                    "set_card_code_updated": set_card_code_updated,
-                    "card_name": self.card.name,
-                    "english_name": self.card.english_name,
-                    "rarity_name": self.rarity.name,
-                    "set_name": self.set.name,
-                    "set_card_code": self.code,
-                    "id": self.card.password,
-                    "level": self.card.level if self.card.level is not None else self.card.rank if self.card.rank is not None else None,
-                    "region": self.set.region,
-                    "language": self.set.language,
-                    "desc": desc,
-                    "archetype": archetypes_list[0] if len(archetypes_list) > 0 else None,
-                    "race": self.card.race,
-                    "atk": self.card.atk_string,
-                    "def": self.card.def_string,
-                    "type": self.card.card_type,
-                    "attribute": self.card.attribute,
-                    "linkval": self.card.link_rating,
-                    "linkmarkers": str(self.card.link_arrows) if len(self.card.link_arrows) > 0 else None,
-                    "scale": self.card.pendulum_scale,
-                    "image_url": self.image_url,
-                    "image_file": self.image_file,
-                    "is_alternate_artwork": self.is_alternate_artwork,
-                    "lore": self.card.lore,
-                    "pendulum_effect": self.card.pendulum_effect,
-                    "archetypes": self.card.archetypes,
-                    "link_arrows": self.card.link_arrows,
-                    "card_image_name": self.card.card_image_name
-                }
-                return obj
-            else:
-                return None
+            obj = {
+                "set_card_name_combined": english_name_wordpress,
+                "set_card_code_updated": set_card_code_updated,
+                "card_name": self.card.name,
+                "english_name": self.card.english_name,
+                "rarity_name": self.rarity.name,
+                "set_name": self.set.name,
+                "set_card_code": self.code,
+                "id": self.card.password,
+                "level": self.card.level if self.card.level is not None else self.card.rank if self.card.rank is not None else None,
+                "region": self.set.region,
+                "language": self.set.language,
+                "desc": desc,
+                "archetype": archetypes_list[0] if len(archetypes_list) > 0 else None,
+                "race": self.card.race,
+                "atk": self.card.atk_string,
+                "def": self.card.def_string,
+                "type": self.card.card_type,
+                "attribute": self.card.attribute,
+                "linkval": self.card.link_rating,
+                "linkmarkers": str(self.card.link_arrows) if len(self.card.link_arrows) > 0 else None,
+                "scale": self.card.pendulum_scale,
+                "image_url": self.image_url,
+                "image_file": self.image_file,
+                "is_alternate_artwork": self.is_alternate_artwork,
+                "lore": self.card.lore,
+                "pendulum_effect": self.card.pendulum_effect,
+                "archetypes": self.card.archetypes,
+                "link_arrows": self.card.link_arrows,
+                "card_image_name": self.card.card_image_name
+            }
+            return obj
         else:
             return None
-
-
-# if __name__ == "__main__":
-#     obj = {
-#         "Abyss Actor - Comic Relief": {
-#             "printouts": {
-#                 "Password": [
-#                     "15308295"
-#                 ],
-#                 "Card type": [
-#                     {
-#                         "fulltext": "Monster Card",
-#                                     "fullurl": "https://yugipedia.com/wiki/Monster_Card",
-#                                     "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ],
-#                 "Level": [
-#                     3
-#                 ],
-#                 "Primary type": [
-#                     {
-#                         "fulltext": "Pendulum Monster",
-#                                     "fullurl": "https://yugipedia.com/wiki/Pendulum_Monster",
-#                                     "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     },
-#                     {
-#                         "fulltext": "Effect Monster",
-#                         "fullurl": "https://yugipedia.com/wiki/Effect_Monster",
-#                                     "namespace": 0,
-#                                     "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ],
-#                 "Type": [
-#                     {
-#                         "fulltext": "Fiend",
-#                                     "fullurl": "https://yugipedia.com/wiki/Fiend",
-#                                     "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ],
-#                 "Archetype support": [
-#                     {
-#                         "fulltext": "Abyss Script",
-#                                     "fullurl": "https://yugipedia.com/wiki/Abyss_Script",
-#                                     "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     },
-#                     {
-#                         "fulltext": "Abyss Actor",
-#                         "fullurl": "https://yugipedia.com/wiki/Abyss_Actor",
-#                                     "namespace": 0,
-#                                     "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ],
-#                 "Property": [],
-#                 "Lore": [
-#                     "You take no [[battle damage]] from [[attack]]s involving this card. [[Once per turn]], during your [[Standby Phase]]: Give [[control]] of this card to your opponent. Once per turn, if control of this [[face-up]] card changes: [[Activate]] this [[effect]]; the [[own]]er of this card can [[destroy]] 1 [[Set]] \"[[Abyss Script]]\" [[Spell Card|Spell]] in their [[Spell & Trap Zone]]."
-#                 ],
-#                 "Attribute": [
-#                     {
-#                         "fulltext": "DARK",
-#                         "fullurl": "https://yugipedia.com/wiki/DARK",
-#                         "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ],
-#                 "ATK": [
-#                     1000
-#                 ],
-#                 "ATK string": [
-#                     "1000"
-#                 ],
-#                 "DEF string": [
-#                     "2000"
-#                 ],
-#                 "DEF": [
-#                     2000
-#                 ],
-#                 "Link Arrows": [],
-#                 "Link Rating": [],
-#                 "Materials": [],
-#                 "Archseries": [
-#                     "Abyss Actor"
-#                 ],
-#                 "Pendulum Scale": [
-#                     8
-#                 ],
-#                 "Pendulum Effect": [
-#                     "You can [[target]] 1 \"[[Abyss Actor]]\" [[Pendulum Monster]] you [[control]] and 1 [[monster]] your opponent controls; switch control of both monsters, then [[destroy]] this card. You can only use this [[effect]] of \"Abyss Actor - Comic Relief\" [[once per turn]]."
-#                 ],
-#                 "Rank": [],
-#                 "English name": [
-#                     "Abyss Actor - Comic Relief"
-#                 ],
-#                 "Page name": [
-#                     "Abyss Actor - Comic Relief"
-#                 ],
-#                 "OCG status": [
-#                     {
-#                         "fulltext": "Unlimited",
-#                         "fullurl": "https://yugipedia.com/wiki/Unlimited",
-#                         "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ],
-#                 "Modification date": [
-#                     {
-#                         "timestamp": "1648817242",
-#                         "raw": "1/2022/4/1/12/47/22/0"
-#                     }
-#                 ],
-#                 "Card image name": [
-#                     "AbyssActorComicRelief"
-#                 ],
-#                 "Class 1": [
-#                     "Official"
-#                 ],
-#                 "Release": [
-#                     {
-#                         "fulltext": "Yu-Gi-Oh! Official Card Game",
-#                         "fullurl": "https://yugipedia.com/wiki/Yu-Gi-Oh!_Official_Card_Game",
-#                         "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     },
-#                     {
-#                         "fulltext": "Yu-Gi-Oh! Trading Card Game",
-#                         "fullurl": "https://yugipedia.com/wiki/Yu-Gi-Oh!_Trading_Card_Game",
-#                         "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#                     }
-#                 ]
-#             },
-#             "fulltext": "Abyss Actor - Comic Relief",
-#             "fullurl": "https://yugipedia.com/wiki/Abyss_Actor_-_Comic_Relief",
-#             "namespace": 0,
-#                         "exists": "1",
-#                         "displaytitle": ""
-#         }
-#     }
-#     result_obj = {
-#         "name": list(obj.keys())[0],
-#         "value": list(obj.values())[0]["printouts"]
-#     }
-#     # yugipedia_obj = YugiohCard.get_dict_from_yugipedia_semantic_search(
-#     #     result_obj["name"], result_obj["value"])

@@ -993,7 +993,9 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 
     # to remove after testing
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "ETCO", "BC"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC"]]
+    # yugioh_sets = [
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
@@ -1043,6 +1045,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
                 get_yugioh_set_cards_from_set_card_list_names, split_list, yugioh_sets, yugioh_cards, yugioh_rarities))
 
         for future in concurrent.futures.as_completed(futures):
+            time.sleep(1.0)
             result = future.result()
             yugioh_set_cards_v2_from_set_card_lists.extend(result)
 
@@ -1063,11 +1066,12 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCard],
                                  yugioh_set_cards_with_codes: List[YugiohSetCard]):
     yugioh_set_cards_final: List[YugiohSetCard] = []
+
     ygo_set_card_with_code_dict = {
         "{region}|{set_name}|{card_english_name}|{rarity_name}".format(region=ygo_set_card.set.region if ygo_set_card.set is not None else "",
                                                                        set_name=ygo_set_card.set.name if ygo_set_card.set is not None else "",
                                                                        card_english_name=ygo_set_card.card.english_name if ygo_set_card.card is not None else "",
-                                                                       rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes
+                                                                       rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity is not None else ""): ygo_set_card for ygo_set_card in yugioh_set_cards_with_codes if not ygo_set_card.code in (None, "")
     }
     for ygo_set_card_image in yugioh_set_cards_with_images:
         ygo_set_card_with_code_found = ygo_set_card_with_code_dict.get("{region}|{set_name}|{card_english_name}|{rarity_name}".format(region=ygo_set_card_image.set.region if ygo_set_card_image.set is not None else "",
@@ -1270,8 +1274,8 @@ def yugipedia_main():
     else:
         df = pd.DataFrame(db_data)
         df.to_csv(os.path.join(output_folder, "yugioh_cards.csv"), index=False)
-        upload_data(df, table_name=TABLE_YUGIOH_CARDS,
-                    if_exist="replace", db_name='yugioh_data')
+        # upload_data(df, table_name=TABLE_YUGIOH_CARDS,
+        #             if_exist="replace", db_name='yugioh_data')
 
         tekkx_cards = [
             YugiohCard.get_yugipedia_dict_from_yugioh_card(card) for card in yugioh_cards]

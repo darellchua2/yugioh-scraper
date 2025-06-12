@@ -1,6 +1,6 @@
 import datetime
 import pandas as pd
-from ..utilities.yugipedia_utilities import get_yugioh_set_cards, get_yugioh_set_cards_v2
+from ..utilities.yugipedia_utilities import get_yugioh_set_cards_v2
 from ..utilities.aws_utilities import upload_data
 from ..config import TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS
 from dotenv import load_dotenv
