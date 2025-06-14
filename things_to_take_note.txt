@@ -77,3 +77,91 @@ SD5-JP034; Magic Jammer
 SD5-JP035; Royal Decree
 SD5-JP036; Blast with Chain
 }}
+
+-----------------
+Set Card Lists:Stardust Overdrive (OCG-JP)
+
+{{Set page header}}
+
+{{Set list|region=JP|
+SOVR-JP001; Majestic Dragon; R
+SOVR-JP002; Stardust Xiaolong; C
+SOVR-JP003; Max Warrior; SR
+SOVR-JP004; Quickdraw Synchron; C
+SOVR-JP005; Level Eater; R
+SOVR-JP006; Zero Gardna; C
+SOVR-JP007; Regulus; C
+SOVR-JP008; Infernity Necromancer; C
+SOVR-JP009; Fortune Lady Wind; R
+SOVR-JP010; Fortune Lady Water; R
+SOVR-JP011; Fortune Lady Dark; R
+SOVR-JP012; Fortune Lady Earth; R
+SOVR-JP013; Solitaire Magician; C
+SOVR-JP014; Catoblepas and the Witch of Fate; SR
+SOVR-JP015; Dark Spider; C
+SOVR-JP016; Ground Spider; C
+SOVR-JP017; Relinquished Spider; C
+SOVR-JP018; Spyder Spider; R
+SOVR-JP019; Mother Spider; R
+SOVR-JP020; Reptilianne Gorgon; R
+SOVR-JP021; Reptilianne Medusa; C
+SOVR-JP022; Reptilianne Scylla; C
+SOVR-JP023; Reptilianne Viper; C
+SOVR-JP024; Earthbound Immortal Ccarayhua; UR,UtR
+SOVR-JP025; Earthbound Immortal Uru; UR,UtR
+SOVR-JP026; Earthbound Immortal Wiraqocha Rasca; UR,UtR
+SOVR-JP027; Koa'ki Meiru Sea Panther; R
+SOVR-JP028; Koa'ki Meiru Rooklord; SR
+SOVR-JP029; Tuned Magician; C
+SOVR-JP030; Crusader of Endymion; SR
+SOVR-JP031; Woodland Archer; C
+SOVR-JP032; Knight of the Red Lotus; C
+SOVR-JP033; Energy Bravery; C
+SOVR-JP034; Swap Frog; C
+SOVR-JP035; Lord British Space Fighter; R
+SOVR-JP036; Oshaleon; C
+SOVR-JP037; Djinn Releaser of Rituals; C
+SOVR-JP038; Djinn Presider of Rituals; C
+SOVR-JP039; Divine Grace - Northwemko; SR
+SOVR-JP040; Majestic Star Dragon; UR,UtR,HGR
+SOVR-JP041; Blackwing - Silverwind the Ascendant; UR,UtR
+SOVR-JP042; Reptilianne Hydra; SR
+SOVR-JP043; Black Brutdrago; SR
+SOVR-JP044; Explosive Magician; SR
+SOVR-JP045; Spider Web; C
+SOVR-JP046; Earthbound Whirlwind; C
+SOVR-JP047; Savage Colosseum; R
+SOVR-JP048; Attack Pheromones; C
+SOVR-JP049; Molting Escape; C
+SOVR-JP050; Reptilianne Spawn; C
+SOVR-JP051; Fortune's Future; C
+SOVR-JP052; Time Passage; C
+SOVR-JP053; Iron Core Armor; C
+SOVR-JP054; Herculean Power; C
+SOVR-JP055; Gemini Spark; R
+SOVR-JP056; Ritual of Grace; C
+SOVR-JP057; Preparation of Rites; R
+SOVR-JP058; Moray of Greed; NR
+SOVR-JP059; Spiritual Forest; C
+SOVR-JP060; Raging Mad Plants; R
+SOVR-JP061; Insect Neglect; C
+SOVR-JP062; Faustian Bargain; NR
+SOVR-JP063; Slip Summon; R
+SOVR-JP064; Synchro Barrier; C
+SOVR-JP065; Enlightenment; C
+SOVR-JP066; Bending Destiny; C
+SOVR-JP067; Inherited Fortune; C
+SOVR-JP068; Spider Egg; C
+SOVR-JP069; Wolf in Sheep's Clothing; C
+SOVR-JP070; Earthbound Wave; C
+SOVR-JP071; Roar of the Earthbound Immortal; C
+SOVR-JP072; Limit Impulse; C
+SOVR-JP073; Infernity Force; C
+SOVR-JP074; Nega-Ton Corepanel; R
+SOVR-JP075; Gemini Counter; R
+SOVR-JP076; Gemini Booster; C
+SOVR-JP077; Ritual Buster; C
+SOVR-JP078; Stygian Dirge; NR
+SOVR-JP079; Seal of Wickedness; SR
+SOVR-JP080; Appointer of the Red Lotus; NR
+}}

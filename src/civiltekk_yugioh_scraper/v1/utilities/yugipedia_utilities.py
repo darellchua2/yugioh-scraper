@@ -413,7 +413,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     # yugioh_sets = [
     #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC"]]
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR", "SOVR"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 

@@ -273,11 +273,8 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                     continue
 
                 # Handle multiple rarities (split by comma)
-                if raw_rarity:
-                    rarities = raw_rarity.split(',')
-                else:
-                    # If no rarity is provided, use the global default rarity (from the header)
-                    rarities = default_rarities
+                rarities = raw_rarity.split(
+                    ',') if raw_rarity else default_rarities
 
                 rarity_list = [r.strip() for r in rarities] if rarities else []
 
