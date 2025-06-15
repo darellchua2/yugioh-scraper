@@ -26,8 +26,8 @@ BIGWEB_DEFAULT_HEADER = {
 
 HEADERS: dict[str, str] = {
     'authority': 'yugipedia.com',
-    'User-Agent': 'yugioh card 1.0 - darellchua2@gmail.com',
-    'From': 'darellchua2@gmail.com'  # This is another valid field
+    'User-Agent': 'CardBot/1.0 - (https://civiltekk.com;darellchua2@gmail.com)',
+    'From': 'darellchua3@gmail.com'  # This is another valid field
 }
 
 TABLE_YUGIOH_CARDS = 'yugioh_cards2'

@@ -74,6 +74,7 @@ def get_card_data(character: str, offset: int = 0, limit: int = 500) -> Optional
     params = card_semantic_search_params(character, offset, limit)
 
     try:
+        time.sleep(1)
         response = requests.get(base_url, headers=HEADERS,
                                 params=params, timeout=10)
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
@@ -99,6 +100,7 @@ def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, l
     while True:
         print(
             f"Fetching data with offset {offset} for character '{character}'...")
+        time.sleep(3)
         data = get_card_data(
             character, offset, limit)
 
@@ -527,25 +529,7 @@ def yugipedia_main():
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    #################################
-    yugioh_rarities = get_yugioh_rarities_v2()
-    db_data = [yugioh_rarity.get_dict() for yugioh_rarity in yugioh_rarities]
-    df = pd.DataFrame(db_data)
-    df.to_csv(os.path.join(output_folder, "yugioh_rarities.csv"), index=False)
-    upload_data(df, table_name=TABLE_YUGIOH_RARITIES,
-                if_exist="replace", db_name='yugioh_data')
-
-    #################################
-
-    yugioh_sets = get_yugioh_sets_v2()
-    db_data = [yugioh_set.get_dict() for yugioh_set in yugioh_sets]
-    df = pd.DataFrame(db_data)
-    df.to_csv(os.path.join(output_folder, "yugioh_sets.csv"), index=False)
-
-    upload_data(df, table_name=TABLE_YUGIOH_SETS,
-                if_exist="replace", db_name='yugioh_data')
-    #################################
-
+    ################################
     yugioh_cards = get_yugioh_cards()
 
     db_data = [yugioh_card.get_dict()
@@ -566,7 +550,24 @@ def yugipedia_main():
         df2 = pd.DataFrame(tekkx_cards)
         df2.to_csv(os.path.join(output_folder, "tekkx_cards.csv"), index=False)
 
-    ################################
+    #################################
+    yugioh_rarities = get_yugioh_rarities_v2()
+    db_data = [yugioh_rarity.get_dict() for yugioh_rarity in yugioh_rarities]
+    df = pd.DataFrame(db_data)
+    df.to_csv(os.path.join(output_folder, "yugioh_rarities.csv"), index=False)
+    upload_data(df, table_name=TABLE_YUGIOH_RARITIES,
+                if_exist="replace", db_name='yugioh_data')
+
+    #################################
+
+    yugioh_sets = get_yugioh_sets_v2()
+    db_data = [yugioh_set.get_dict() for yugioh_set in yugioh_sets]
+    df = pd.DataFrame(db_data)
+    df.to_csv(os.path.join(output_folder, "yugioh_sets.csv"), index=False)
+
+    upload_data(df, table_name=TABLE_YUGIOH_SETS,
+                if_exist="replace", db_name='yugioh_data')
+    #################################
 
 
 if __name__ == "__main__":
