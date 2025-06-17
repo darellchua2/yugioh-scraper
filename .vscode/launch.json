@@ -94,12 +94,35 @@
       }
     },
     {
-      "name": "test_scrape",
+      "name": "scrape_bigweb",
       "type": "python",
       "request": "launch",
       "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
       "console": "integratedTerminal",
-      "args": ["test_scrape"],
+      "args": ["scrape_bigweb"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
+    },
+    {
+      "name": "scrape_yuyutei",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["scrape_yuyutei"],
       "env": {
         "PYTHONPATH": "${workspaceFolder}"
       },

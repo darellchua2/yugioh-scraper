@@ -106,7 +106,7 @@ def run_yugipedia_request_until_response(url: str, params: dict, headers=HEADERS
         time.sleep(0.5)
         try:
             response = requests.get(
-                url, params=params, timeout=10, headers=headers)
+                url, params=params, timeout=50, headers=headers)
             return response
         except requests.exceptions.ReadTimeout:
             print(f"ReadTimeoutError: {url} - Counter {counter}")
