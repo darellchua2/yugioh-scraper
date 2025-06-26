@@ -143,7 +143,8 @@ def run_wiki_request_until_response(url: str, header: dict, params: dict, max_co
         try:
             logging.info(f"Running URL: {url}")
             print(url, params)
-            response = requests.get(url, headers=header, params=params)
+            response = requests.get(
+                url, headers=header, params=params, timeout=50)
             if response.status_code == 200:
                 response_json = response.json()
                 break
