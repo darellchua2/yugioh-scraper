@@ -76,7 +76,7 @@ def tcgcorner_scrape_per_page(page_number=1) -> tuple[list[dict], int]:
     tcg_array: list[dict] = []
     tcgcorner_url = get_tcgcorner_url(page_number)
     # Make the API call
-    response = requests.get(tcgcorner_url)
+    response = requests.get(tcgcorner_url, timeout=10)
     data = response.json()
     pagination_data = data['pagination']
     last_page = pagination_data['last_page']

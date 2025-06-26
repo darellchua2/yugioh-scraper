@@ -39,7 +39,8 @@ def get_category_members(category_name: str, limit: int = 500) -> List[Dict[str,
         "cmlimit": limit
     }
 
-    response = requests.get(MEDIAWIKI_URL, headers=HEADERS, params=params)
+    response = requests.get(
+        MEDIAWIKI_URL, headers=HEADERS, params=params, timeout=10)
     if response.status_code == 200:
         data = response.json()
         if "query" in data and "categorymembers" in data["query"]:
@@ -67,7 +68,7 @@ def get_redirects_for_pages(titles: List[str], limit: int = 500) -> List[Dict[st
 
         while True:
             response = requests.get(
-                MEDIAWIKI_URL, headers=HEADERS, params=params)
+                MEDIAWIKI_URL, headers=HEADERS, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 print("data", data)

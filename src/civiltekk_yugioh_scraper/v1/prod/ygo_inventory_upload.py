@@ -29,9 +29,10 @@ def upload_inventory_main(filename="YGOInventoryV2.xlsx",
             df['post_title'].str.endswith(" | Japanese", na=False)
         ]
 
-        save_df_to_s3(filtered_df, s3_bucket_name, dir, filename_to_upload)
-        save_df_to_mysql(df, table_name=ygo_inventory_data_table,
-                         if_exists="replace")
+        # save_df_to_s3(filtered_df, s3_bucket_name, dir, filename_to_upload)
+        # save_df_to_mysql(df, table_name=ygo_inventory_data_table,
+        #                  if_exists="replace")
+        filtered_df.to_csv("sample.csv", index=False)
 
 
 if __name__ == "__main__":
