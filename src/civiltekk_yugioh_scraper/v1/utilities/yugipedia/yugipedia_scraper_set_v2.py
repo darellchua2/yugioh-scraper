@@ -115,7 +115,8 @@ def fetch_json_with_generator(url: str, params: Dict[str, Any]) -> List[Dict[str
 
     while retries > 0:
         try:
-            response = requests.get(url, headers=HEADERS, params=params)
+            response = requests.get(
+                url, headers=HEADERS, params=params, timeout=10)
             response.raise_for_status()
             json_data: Dict[str, Any] = response.json()
             combined_results.append(json_data)
@@ -259,7 +260,8 @@ def save_sets_to_csv(yugioh_sets: List[YugiohSet], filename: str) -> None:
 
 def fetch_results(base_url: str, params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
-        response = requests.get(base_url, headers=HEADERS, params=params)
+        response = requests.get(base_url, headers=HEADERS,
+                                params=params, timeout=10)
         response.raise_for_status()
         return response.json()
     except Exception as e:
@@ -554,7 +556,7 @@ def get_yugioh_set_card_image_urls(image_files: List[str]) -> List[Dict[str, str
         try:
             # Make the API request
             response = requests.get(
-                MEDIAWIKI_URL, headers=HEADERS, params=params)
+                MEDIAWIKI_URL, headers=HEADERS, params=params, timeout=10)
             response.raise_for_status()
             res_json: Dict[str, Any] = response.json()
 

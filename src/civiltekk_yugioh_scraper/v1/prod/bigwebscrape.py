@@ -163,7 +163,7 @@ def bigweb_scrape():
     start = datetime.datetime.now()
 
     URL = 'https://api.bigweb.co.jp/products?game_id=9'
-    response = requests.get(URL)
+    response = requests.get(URL, timeout=10)
     response_dict = response.json()
     total_page_to_iterate = response_dict['pagenate']['pageCount']
     print("total page count: {total_page_to_iterate}".format(

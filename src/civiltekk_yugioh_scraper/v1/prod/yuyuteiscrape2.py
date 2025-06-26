@@ -90,7 +90,7 @@ def get_card_set_codes_from_card_set(obj: dict) -> list[dict]:
         url: str = obj['url']
         print('url:', url)
         set_code = obj['set_code']
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.encoding = 'utf-8'
         source = response.text
         soup = bs.BeautifulSoup(source, 'html.parser')
@@ -149,7 +149,7 @@ def get_card_set_codes_from_card_set(obj: dict) -> list[dict]:
 def get_set_list(url: str) -> list[dict]:
 
     dict_list = []
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     response.encoding = 'utf-8'
     source = response.text
     soup = bs.BeautifulSoup(source, 'html.parser')
@@ -182,7 +182,7 @@ def get_set_list(url: str) -> list[dict]:
 def get_set_list_v2(url: str) -> list[dict]:
     dict_list = []
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.encoding = 'utf-8'
         source = response.text
     except requests.RequestException as e:
