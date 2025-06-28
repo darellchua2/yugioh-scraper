@@ -6,7 +6,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import csv
-from typing import cast, List, Dict
+from typing import Tuple, cast, List, Dict
 
 from ..models.ygo_models import TekkxProductData
 from .tcgcorner_scraper import get_card_prices
@@ -65,7 +65,7 @@ def retrieve_website_data() -> pd.DataFrame:
         df_posts['set_card_name_combined'] = split_cols[1]
         df_posts['rarity_name'] = split_cols[2]
         df_posts['set_name'] = split_cols[3]
-        df_posts['region'] = split_cols[4].fillna('Japanese')
+        df_posts['region'] = split_cols[4]
 
         df = pd.merge(df_posts, df_product_meta, on='product_id', how='left')
         df = df.dropna(subset=['set_card_name_combined'])
@@ -210,7 +210,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         return redirect_dict
 
 
-def export_inventory_excel() -> None:
+def export_inventory_excel(is_check_existing_names: bool = True, is_to_save_to_mysql: bool = False) -> None:
     """
     Combines website and database inventory data, handles card name redirections, and exports to Excel.
     """
@@ -229,17 +229,18 @@ def export_inventory_excel() -> None:
 
         df_website = pd.DataFrame(retrieve_website_data_to_list_of_dict())
         card_name_list = df_website["set_card_name_combined"].tolist()
-        dict_to_map = check_existing_card_names_to_update(card_name_list)
+        if is_check_existing_names:
+            dict_to_map = check_existing_card_names_to_update(card_name_list)
 
-        if dict_to_map:
-            df_website = pd.merge(
-                df_website,
-                pd.DataFrame([{"name": k, "new name": v}
-                             for k, v in dict_to_map.items()]),
-                how="left",
-                left_on="set_card_name_combined",
-                right_on="name"
-            ).drop(columns=['name'])
+            if dict_to_map:
+                df_website = pd.merge(
+                    df_website,
+                    pd.DataFrame([{"name": k, "new name": v}
+                                  for k, v in dict_to_map.items()]),
+                    how="left",
+                    left_on="set_card_name_combined",
+                    right_on="name"
+                ).drop(columns=['name'])
 
         df_combined = pd.concat(
             [df_website, df_asian_english], ignore_index=True)
@@ -252,14 +253,66 @@ def export_inventory_excel() -> None:
             with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
                 df_overall.to_excel(writer, sheet_name="Sheet1", index=False)
 
-        save_df_to_mysql(
-            df_combined, table_name="ygo_inventory_data", if_exists="replace")
+        if is_to_save_to_mysql:
+            save_df_to_mysql(
+                df_combined, table_name="ygo_inventory_data", if_exists="replace")
 
     except Exception as e:
         logging.error(f"Error exporting inventory to Excel: {e}")
 
 
-def update_ae_price(list_of_inventory: List[Dict], list_of_card_prices: List[Dict]) -> List[Dict]:
+def export_inventory_excel_v2(is_check_existing_names: bool = True, is_to_save_to_mysql: bool = False):
+    """
+    Combines website and database inventory data, handles card name redirections, and exports to Excel.
+    """
+    try:
+        df_website = pd.DataFrame()
+        ygo_inventory_export_path = get_file_path("YGOInventoryV2.xlsx")
+        ygo_overall_card_list_export_path = get_file_path(
+            "OverallCardCodeList-2.xlsx")
+
+        try:
+            _, engine = get_engine_for_tekkx_scalable_db(db_name="yugioh_data")
+            df_asian_english = pd.read_sql(
+                "SELECT * FROM ygo_inventory_data WHERE region = 'Asian-English'", engine)
+        except Exception as e:
+            logging.warning(f"No Asian-English records found: {e}")
+            df_asian_english = pd.DataFrame()
+
+        df_website = pd.DataFrame(retrieve_website_data_to_list_of_dict())
+        card_name_list = df_website["set_card_name_combined"].tolist()
+        if is_check_existing_names:
+            dict_to_map = check_existing_card_names_to_update(card_name_list)
+
+            if dict_to_map:
+                df_website = pd.merge(
+                    df_website,
+                    pd.DataFrame([{"name": k, "new name": v}
+                                  for k, v in dict_to_map.items()]),
+                    how="left",
+                    left_on="set_card_name_combined",
+                    right_on="name"
+                ).drop(columns=['name'])
+
+        df_combined = pd.concat(
+            [df_website, df_asian_english], ignore_index=True)
+        df_overall = create_overall_card_code_list()
+
+        if ygo_inventory_export_path:
+            with pd.ExcelWriter(ygo_inventory_export_path, engine='xlsxwriter') as writer:
+                df_combined.to_excel(writer, sheet_name="V2", index=False)
+        if ygo_overall_card_list_export_path:
+            with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
+                df_overall.to_excel(writer, sheet_name="Sheet1", index=False)
+        if is_to_save_to_mysql:
+            save_df_to_mysql(
+                df_combined, table_name="ygo_inventory_data", if_exists="replace")
+        return df_website, df_overall, df_combined, df_asian_english
+    except Exception as e:
+        logging.error(f"Error exporting inventory to Excel: {e}")
+
+
+def update_ae_price(list_of_inventory: List[Dict], list_of_card_prices: List[Dict]) -> List[Dict[str, str | float | bool | None]]:
     """
     Updates inventory prices based on matched card price data.
 
@@ -280,28 +333,34 @@ def update_ae_price(list_of_inventory: List[Dict], list_of_card_prices: List[Dic
         return list_of_inventory
 
 
-def combine_ae_price() -> None:
+def combine_ae_price(filename: str = "YGOInventoryV2-AE.xlsx",
+                     sheet_name: str = "Inventory",
+                     output_card_prices: bool = False,
+                     output_updated_inventory: bool = False) -> tuple[list[dict[str, str | float | bool | None]], List[Dict[str, str | float | bool | None]]] | None:
     """
     Combines AE card price data into existing inventory and exports both raw and updated lists to CSV.
     """
     try:
-        filepath = get_file_path("YGOInventoryV2-AE.xlsx")
-        df_inventory = pd.read_excel(filepath, sheet_name="Inventory")
+        filepath = get_file_path(filename=filename)
+        df_inventory = pd.read_excel(filepath, sheet_name=sheet_name)
 
         list_of_inventory = df_inventory.to_dict("records")
         card_prices = get_card_prices()
 
         updated_inventory = update_ae_price(list_of_inventory, card_prices)
 
-        with open('list_of_card_prices.csv', 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, card_prices[0].keys())
-            writer.writeheader()
-            writer.writerows(card_prices)
+        if output_card_prices:
+            with open('list_of_card_prices.csv', 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, card_prices[0].keys())
+                writer.writeheader()
+                writer.writerows(card_prices)
+        if output_updated_inventory:
+            with open('list_of_updated_inventory.csv', 'w', newline='', encoding='utf-8') as f:
+                writer = csv.DictWriter(f, updated_inventory[0].keys())
+                writer.writeheader()
+                writer.writerows(updated_inventory)
 
-        with open('list_of_updated_inventory.csv', 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, updated_inventory[0].keys())
-            writer.writeheader()
-            writer.writerows(updated_inventory)
+        return card_prices, updated_inventory
 
     except Exception as e:
         logging.error(f"Error combining AE prices: {e}")

@@ -167,7 +167,7 @@ def dict_to_csv(filename: str, data_array: list[dict], method="LOCAL"):
         save_to_s3(BUCKET_NAME, filename, csv_buffer, file_type="csv")
 
 
-def get_card_prices() -> list[dict]:
+def get_card_prices() -> list[dict[str, str | float | bool | None]]:
     card_price_array: list[dict[str, str | float | bool | None]] = []
     tcg_array_per_page, last_page = tcgcorner_scrape_per_page(1)
     card_price_array.extend(tcg_array_per_page)
