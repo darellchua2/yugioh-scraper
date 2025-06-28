@@ -1,84 +1,15 @@
+import time
 import requests
 from typing import List, Dict, Any, Optional
 
-from ...utilities.misc_utilities import run_request_until_response, run_yugipedia_request_until_response
 from ...models.yugipedia_models import YugiohCard
+from ..yugipedia.mediawiki_params import card_semantic_search_params, card_semantic_search_params_v2
 from ...config import HEADERS
 import concurrent.futures
 import string
 import csv
 import requests
 from typing import Optional, Dict, Any
-
-
-def card_semantic_search_params(character: str, offset: int, limit: int = 500) -> Dict[str, Any]:
-    """
-    Generate search parameters for Yugipedia semantic search API.
-    """
-    return {
-        "q": f"[[Page type::Card page]][[Page name::~{character}*]][[Release::Yu-Gi-Oh! Official Card Game]]",
-        "p": "format=json",
-        "po": (
-            "|?Password"
-            "|?Card type"
-            "|?Level"
-            "|?Primary type"
-            "|?Type"
-            "|?Archetype support"
-            "|?Property"
-            "|?Lore"
-            "|?Attribute"
-            "|?ATK"
-            "|?ATK string"
-            "|?DEF string"
-            "|?DEF"
-            "|?Link Arrows"
-            "|?Link Rating"
-            "|?Materials"
-            "|?Archseries"
-            "|?Pendulum Scale"
-            "|?Pendulum Effect"
-            "|?Rank"
-            "|?English name"
-            "|?Page name"
-            "|?OCG status"
-            "|?Modification date"
-            "|?Card image name"
-            "|?Class 1"
-            "|?Release"
-        ),
-        "title": "Special:Ask",
-        "order": "asc",
-        "offset": offset,
-        "limit": limit,
-        "eq": "yes",
-        "link": "none"
-    }
-
-
-def fetch_card_data(character: str, offset: int = 0, limit: int = 500) -> Optional[Dict[str, Any]]:
-    """
-    Fetch card data from Yugipedia's API using semantic search.
-    Handles errors gracefully to ensure the script continues.
-    """
-    base_url = "https://yugipedia.com/wiki/Special:Ask"
-    params = card_semantic_search_params(character, offset, limit)
-
-    try:
-        response = run_yugipedia_request_until_response(base_url, params)
-        # Raise HTTPError for bad responses (4xx and 5xx)
-        response.raise_for_status()
-
-        # Check if the response contains valid JSON
-        try:
-            return response.json()
-        except ValueError as ve:
-            print(f"Invalid JSON response for character '{character}': {ve}")
-            return None
-
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching data for '{character}': {e}")
-        return None
 
 
 def fetch_card_data_v2(character: str, offset: int = 0, limit: int = 500) -> Optional[Dict[str, Any]]:
@@ -105,25 +36,6 @@ def fetch_card_data_v2(character: str, offset: int = 0, limit: int = 500) -> Opt
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while fetching data for '{character}': {e}")
         return None
-
-
-def card_semantic_search_params_v2(character: str, offset: int, limit: int = 500) -> Dict[str, Any]:
-    """
-    Generate search parameters for Yugipedia MediaWiki API.
-    """
-    return {
-        "action": "query",                   # Action for querying the API
-        "format": "json",                    # Desired response format
-        "list": "search",                    # Perform a search query
-        "srsearch": f'[[Page type::Card page]][[Page name::~{character}*]][[Release::Yu-Gi-Oh! Official Card Game]]',
-        # Search within the main namespace (0 = articles)
-        "srnamespace": "0",
-        "srlimit": limit,                    # Limit the number of results returned
-        "sroffset": offset,                  # Offset for pagination
-        "prop": "info|pageimages|extracts",   # Retrieve page info, image, and extract
-        "inprop": "url",                     # Include the URL in the result
-        "pithumbsize": 100,                  # Thumbnail size for images
-    }
 
 
 def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[YugiohCard]:
@@ -162,19 +74,6 @@ def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[Yug
         offset += limit
 
     return all_cards
-
-
-def display_card_data(cards: List[YugiohCard]) -> None:
-    """
-    Display card information in a readable format.
-    """
-    if not cards:
-        print("No card data found.")
-        return
-
-    for card in cards:
-        print(card)
-        print("-" * 40)
 
 
 def save_cards_to_csv(cards: List[YugiohCard], filename: str) -> None:
@@ -219,6 +118,94 @@ def fetch_and_save_cards(search_character: str, output_file: str) -> None:
             print(f"No cards found for '{search_character}'.")
     except Exception as e:
         print(f"An unexpected error occurred for '{search_character}': {e}")
+
+
+def get_card_data(character: str, offset: int = 0, limit: int = 500) -> Optional[Dict[str, Any]]:
+    """
+    Fetch card data from Yugipedia's API using semantic search.
+    Handles errors gracefully to ensure the script continues.
+    """
+    base_url = "https://yugipedia.com/wiki/Special:Ask"
+    params = card_semantic_search_params(character, offset, limit)
+
+    try:
+        time.sleep(1)
+        response = requests.get(base_url, headers=HEADERS,
+                                params=params, timeout=10)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
+
+        # Check if the response contains valid JSON
+        try:
+            return response.json()
+        except ValueError as ve:
+            print(f"Invalid JSON response for character '{character}': {ve}")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"An error occurred while fetching data for '{character}': {e}")
+        return None
+
+
+def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, limit: int = 500) -> List[YugiohCard]:
+    """
+    Collect all card data for the given character by iterating through pages.
+    """
+    all_cards: List[YugiohCard] = []
+    offset = 0
+    while True:
+        print(
+            f"Fetching data with offset {offset} for character '{character}'...")
+        time.sleep(3)
+        data = get_card_data(
+            character, offset, limit)
+
+        if data is None or "results" not in data:
+            print("No more data found or an error occurred.")
+            break
+
+        results: dict[str, dict] = data.get("results", {})
+        if not results:
+            print("No additional results found.")
+            break
+
+        # Convert results into YugiohCard instances and add to the list
+        for card_name, card_data in results.items():
+            attributes = card_data.get("printouts", {})
+            yugioh_card = YugiohCard(card_name, attributes)
+            all_cards.append(yugioh_card)
+
+        # Check if we have fetched all entries
+        if len(results) < limit:
+            print("All entries fetched.")
+            break
+
+        # Increment offset for next iteration
+        offset += limit
+
+    return all_cards
+
+
+def get_yugioh_cards() -> list[YugiohCard]:
+    character_list = list(string.ascii_uppercase)
+    character_list.extend(
+        ["\"", "1", "3", "4", "7", "8", "@"])
+    yugioh_cards: list[YugiohCard] = []
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:  # optimally defined number of threads
+        futures = []
+        for character in character_list:
+            time.sleep(1)
+            futures.append(executor.submit(
+                get_yugioh_cards_per_semantic_card_search_per_character_v2, character))
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                yugioh_cards.extend(future.result().copy())
+            except requests.exceptions.JSONDecodeError as e:
+                pass
+        print("Total semantic cards:{overall_list_count}".format(
+            overall_list_count=len(yugioh_cards)))
+
+    return yugioh_cards
 
 
 def main() -> None:

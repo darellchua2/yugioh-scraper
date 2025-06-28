@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 import logging
 import pandas as pd
 import pymysql
-from ..config import RDS_HOST, NAME, PASSWORD, TEKKX_SCALABLE_DB_NAME, YUGIOH_DB, DB_PORT
+from ..config import RDS_HOST, NAME, PASSWORD, TEKKX_SCALABLE_DB_NAME, DB_PORT
 
 
 # Setup logging

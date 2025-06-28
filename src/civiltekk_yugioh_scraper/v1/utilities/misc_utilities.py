@@ -4,7 +4,7 @@ import logging
 import time
 import os
 import platform
-from typing import Generator, Tuple, Optional
+from typing import Dict, Generator, Mapping, Tuple, Optional
 from ..config import JAPANESE_CHARS_REGEX, WINDOWS_EXPORT_PATH, LINUX_EXPORT_PATH, READ_TIMEOUT_ERROR, JSON_ERROR, BASE_TEKKX_PRODUCT_URL, BIGWEB_DEFAULT_HEADER, HEADERS
 
 
@@ -97,7 +97,7 @@ def run_request_until_response(url: str, params: dict, max_counter: int = 5) -> 
     return response
 
 
-def run_yugipedia_request_until_response(url: str, params: dict, headers=HEADERS, max_counter: int = 5) -> requests.Response:
+def run_yugipedia_request_until_response(url: str, params: Mapping[str, str | int] | Dict[str, str | str], headers=HEADERS, max_counter: int = 5) -> requests.Response:
     headers = headers or {}
     response = None
     counter = 0
