@@ -25,6 +25,29 @@
       }
     },
     {
+      "name": "Export Inventory Excel V2",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/app/vscode/ygo_inventory_main.py",
+      "console": "integratedTerminal",
+      "args": ["export_v2"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "windows": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}\\myvenv\\Scripts\\python.exe"
+      },
+      "linux": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "python": "${workspaceFolder}/myvenv/bin/python"
+      }
+    },
+    {
       "name": "Upload Inventory Excel",
       "type": "debugpy",
       "request": "launch",
