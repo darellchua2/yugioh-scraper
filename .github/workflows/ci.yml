@@ -67,6 +67,14 @@ jobs:
         run: |
           poetry install
 
-      - name: 🐍 Run Tests
+      - name: 🐍 Run tests
         run: |
+          set +e
           poetry run pytest
+          code=$?
+          set -e
+          if [ "$code" -eq 5 ]; then
+            echo "⚠️  No tests collected; skipping."
+            exit 0
+          fi
+          exit $code
