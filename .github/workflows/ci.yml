@@ -1,0 +1,74 @@
+name: CI - Build and Test (Python with CodeArtifact)
+
+on:
+  pull_request:
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  CODEARTIFACT_DOMAIN: ${{ vars.CODEARTIFACT_DOMAIN }}
+  CODEARTIFACT_OWNER: ${{ vars.CODEARTIFACT_OWNER }}
+  CODEARTIFACT_REPO: ${{ vars.CODEARTIFACT_REPO }}
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-and-test:
+    name: 🧪 Build & Test (Python)
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+
+    steps:
+      - name: 🧾 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.CODEARTIFACT_PUBLISH_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔧 Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: 🧪 Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: 🔐 Authenticate with CodeArtifact (Python)
+        run: |
+          TOKEN=$(aws codeartifact get-authorization-token \
+            --domain $CODEARTIFACT_DOMAIN \
+            --domain-owner $CODEARTIFACT_OWNER \
+            --region $AWS_REGION \
+            --query authorizationToken \
+            --output text)
+
+          REPO_URL="https://${CODEARTIFACT_DOMAIN}-${CODEARTIFACT_OWNER}.d.codeartifact.${AWS_REGION}.amazonaws.com/pypi/${CODEARTIFACT_REPO}/"
+
+          # Configure Poetry to use the authorization token
+          poetry config http-basic.codeartifact aws $TOKEN
+          poetry config repositories.codeartifact $REPO_URL
+
+      - name: ✍️ Copy pip.conf file
+        run: |
+          mkdir -p ~/.config/pip
+          cp ./config/pip.conf ~/.config/pip/pip.conf
+
+      - name: ✍️ Copy .pypirc file
+        run: |
+          cp ./config/.pypirc ~/.pypirc
+
+      - name: 🧪 Install Dependencies using Poetry
+        run: |
+          poetry install
+        working-directory: app/fastapi_app # Set the working directory for this step
+
+      - name: 🐍 Run Tests
+        run: |
+          poetry run pytest
+        working-directory: app/fastapi_app # Set the working directory for this step

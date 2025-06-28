@@ -191,6 +191,13 @@ class YugiohCard:
         """
         return json.dumps(values)
 
+    def display_card_data(self):
+        """
+        Display card information in a readable format.
+        """
+        print(self)
+        print("-" * 40)
+
     def __str__(self) -> str:
         """
         Return a string representation of the card.
