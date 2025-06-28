@@ -66,9 +66,7 @@ jobs:
       - name: 🧪 Install Dependencies using Poetry
         run: |
           poetry install
-        working-directory: app/fastapi_app # Set the working directory for this step
 
       - name: 🐍 Run Tests
         run: |
           poetry run pytest
-        working-directory: app/fastapi_app # Set the working directory for this step
