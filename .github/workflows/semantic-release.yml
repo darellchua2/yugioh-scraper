@@ -4,7 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  CODEARTIFACT_DOMAIN: ${{ vars.CODEARTIFACT_DOMAIN }}
+  CODEARTIFACT_OWNER: ${{ vars.CODEARTIFACT_OWNER }}
+  CODEARTIFACT_REPO: ${{ vars.CODEARTIFACT_REPO }}
+  PYTHON_VERSION: 3.12
 permissions:
   contents: write
   id-token: write # for AWS OIDC
@@ -12,12 +17,13 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment:
+      name: development
     concurrency:
       group: semantic-release-codeartifact
       cancel-in-progress: true
 
     env:
-      PYTHON_VERSION: 3.12
       AWS_REGION: ${{ secrets.AWS_REGION }}
       CODEARTIFACT_PYTHON_REPO: ${{ secrets.CODEARTIFACT_PYTHON_REPO }}
       DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
@@ -53,8 +59,9 @@ jobs:
           echo "NEXT_VERSION=$version" >> $GITHUB_ENV
           sed -i "s/^version = \".*\"/version = \"$version\"/" pyproject.toml
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: 🧪 Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
 
       - name: Install Dependencies
         run: poetry install --no-interaction --no-root
@@ -63,23 +70,38 @@ jobs:
         run: poetry build
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_CODEARTIFACT_PYTHON_IAM_ROLE }}
+          role-to-assume: ${{ secrets.CODEARTIFACT_PUBLISH_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get CodeArtifact Token
+      - name: 🔐 Authenticate with CodeArtifact (Python)
         run: |
-          export CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token \
-            --domain ${{ env.DOMAIN_NAME }} \
-            --domain-owner ${{ env.DOMAIN_OWNER }} \
+          TOKEN=$(aws codeartifact get-authorization-token \
+            --domain $CODEARTIFACT_DOMAIN \
+            --domain-owner $CODEARTIFACT_OWNER \
+            --region $AWS_REGION \
             --query authorizationToken \
             --output text)
-          echo "CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN" >> $GITHUB_ENV
+          echo "CODEARTIFACT_AUTH_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+          REPO_URL="https://${{ env.CODEARTIFACT_DOMAIN }}-${{ env.CODEARTIFACT_OWNER }}.d.codeartifact.${{env.AWS_REGION}}.amazonaws.com/pypi/${{env.CODEARTIFACT_REPO}}/"
+
+          # Configure Poetry to use the authorization token
+          poetry config http-basic.codeartifact aws $TOKEN
+          poetry config repositories.codeartifact $REPO_URL
+
+      - name: ✍️ Copy pip.conf file
+        run: |
+          mkdir -p ~/.config/pip
+          cp ./config/pip.conf ~/.config/pip/pip.conf
+
+      - name: ✍️ Copy .pypirc file
+        run: |
+          cp ./config/.pypirc ~/.pypirc
 
       - name: Publish to CodeArtifact
         run: |
-          poetry config repositories.codeartifact https://${{ env.DOMAIN_NAME }}-${{ env.DOMAIN_OWNER }}.d.codeartifact.${{ env.AWS_REGION }}.amazonaws.com/pypi/${{ env.CODEARTIFACT_PYTHON_REPO }}/
           poetry config pypi-token.codeartifact ${{ env.CODEARTIFACT_AUTH_TOKEN }}
           poetry publish --repository codeartifact
 
