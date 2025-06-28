@@ -36,8 +36,9 @@ jobs:
           python-version: 3.12
 
       - name: 🧪 Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.1.3
 
       - name: 🔐 Authenticate with CodeArtifact (Python)
         run: |
