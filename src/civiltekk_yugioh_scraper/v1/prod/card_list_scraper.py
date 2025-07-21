@@ -6,7 +6,7 @@ from ..config import TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS
 from dotenv import load_dotenv
 
 
-def card_list_scraper(to_csv: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
+def card_list_scraper(to_csv: bool = True, to_sql: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
     start = datetime.datetime.now()
     yugioh_set_cards, yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list = get_yugioh_set_cards_v2()
     yugioh_set_card_dicts = [yugioh_set_card.get_tekkx_wordpress_dict_from_yugioh_set_card()
@@ -21,8 +21,9 @@ def card_list_scraper(to_csv: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
         df_missing_links.to_csv(
             "./output/missing_links.csv", index=False)
 
-    upload_data(df, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS,
-                "replace", db_name="yugioh_data")
+    if to_sql:
+        upload_data(df, TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS,
+                    "replace", db_name="yugioh_data")
 
     end = datetime.datetime.now()
     difference = end - start

@@ -187,7 +187,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
 
     try:
         res_json = requests.get(
-            url=MEDIAWIKI_URL, headers=HEADERS, params=obj, timeout=10).json()
+            url=MEDIAWIKI_URL, headers=HEADERS, params=obj, timeout=60).json()
         res_json_query_obj: dict = res_json.get("query", {})
 
         if "redirects" in res_json_query_obj:
@@ -197,7 +197,7 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         while "continue" in res_json:
             obj["rdcontinue"] = res_json["continue"].get("rdcontinue", "")
             res_json = requests.get(
-                url=MEDIAWIKI_URL, headers=HEADERS, params=obj, timeout=10).json()
+                url=MEDIAWIKI_URL, headers=HEADERS, params=obj, timeout=60).json()
             res_json_query_obj = res_json.get("query", {})
 
             if "redirects" in res_json_query_obj:

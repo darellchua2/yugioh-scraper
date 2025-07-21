@@ -15,4 +15,4 @@ if __name__ == "__main__":
         if action == "scrape_yugipedia":
             yugipedia_main()
         if action == "scrape_yugipedia_set_cards":
-            card_list_scraper()
+            card_list_scraper(True, False)

@@ -131,7 +131,7 @@ def get_card_data(character: str, offset: int = 0, limit: int = 500) -> Optional
     try:
         time.sleep(1)
         response = requests.get(base_url, headers=HEADERS,
-                                params=params, timeout=10)
+                                params=params, timeout=60)
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx and 5xx)
 
         # Check if the response contains valid JSON
@@ -191,7 +191,8 @@ def get_yugioh_cards() -> list[YugiohCard]:
         ["\"", "1", "3", "4", "7", "8", "@"])
     yugioh_cards: list[YugiohCard] = []
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:  # optimally defined number of threads
+    # optimally defined number of threads
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         futures = []
         for character in character_list:
             time.sleep(1)
