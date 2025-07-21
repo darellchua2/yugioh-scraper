@@ -6,7 +6,6 @@ import time
 from typing import List, Mapping
 import pandas as pd
 import unicodedata
-import mwparserfromhell
 
 from ..aws_utilities import retrieve_data_from_db_to_df
 
@@ -192,10 +191,7 @@ def find_rarity(code_or_name: str, rarities: List[YugiohRarity]) -> YugiohRarity
 
 
 def clean_wikitext_specials(text: str) -> str:
-    """
-    Replace MediaWiki special templates like {{=}} with literal characters.
-    """
-    return text.replace('{{=}}', '=').replace('{{!}}', '|').strip()
+    return text.replace('{{=}}', '=').strip()
 
 
 def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
@@ -210,7 +206,9 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
     all_records: List[YugiohSetCard] = []
 
     for page_title, wikitext in wikitext_map.items():
+        # Debugging: print a snippet of the wikitext to check if it's correctly fetched
         print(f"Processing page: {page_title}")
+        # Print a snippet of the wikitext to check if the data looks correct
         print(wikitext[:500])
 
         yugioh_set = next(
@@ -219,27 +217,35 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
             print(f"⚠️ Set not found: {page_title}")
             continue
 
-        wikicode = mwparserfromhell.parse(wikitext)
-        for template in wikicode.filter_templates():
-            if not template.name.matches("Set list"):
-                continue
+        set_blocks = re.findall(
+            r"{{Set list\|([\s\S]*?)\n}}", wikitext, re.DOTALL)
 
-            # Extract global parameters from the header
-            header_line = str(template.params[0].value).strip(
-            ) if template.params else ""
-            global_params = {k.strip(): v.strip() for k, v in (
-                param.split('=', 1) for param in header_line.split('|') if '=' in param)}
-            default_rarities = [r.strip() for r in global_params.get(
-                "rarities", "").split(',') if r.strip()]
+        for block in set_blocks:
+            lines = block.strip().splitlines()
+            global_params = {}
+            entry_lines = []
 
+            # Skip the first line (header) and process the remaining lines for card data
+            for line in lines[1:]:  # Skip the header line
+                entry_lines.append(line.strip())
+
+            # Extract global parameters from the header (first line)
+            header_line = lines[0].strip()  # This is the first line (header)
+            global_params = {k.strip(): v.strip() for k, v in (param.split(
+                '=', 1) for param in header_line.split('|') if '=' in param)}
+
+            # Extract global rarity from header
+            default_rarities = global_params.get("rarities", "").split(',')
+            # Clean any spaces
+            default_rarities = [r.strip()
+                                for r in default_rarities if r.strip()]
+
+            # If no rarity is defined in the header, we don't set any default rarity (do nothing here)
             if not default_rarities:
                 print(f"⚠️ No global rarity found in header for {page_title}")
 
-            # Process the content (card lines) — skip the header line
-            content_lines = str(template).split('\n')[1:]
-            for line in content_lines:
-                line = line.strip()
-                if not line or line.startswith('|'):
+            for line in entry_lines:
+                if not line.strip():
                     continue
 
                 parts_main = line.split('//', 1)
@@ -247,38 +253,53 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 entry_opts = parts_main[1].strip() if len(
                     parts_main) > 1 else ""
 
+                # Check for alternate artwork in the description (after //)
                 is_alternate_artwork = any(
                     marker in entry_opts.lower()
                     for marker in ("alternate artwork", "international artwork", "new artwork", "9th artwork", "8th artwork", "7th artwork")
                 )
 
+                # Split entry data into fields (card code, name, rarity, print code, quantity)
                 fields = [p.strip() for p in entry_data.split(';')]
+
+                # If there are fewer than 5 fields, fill the missing ones with defaults
                 if len(fields) < 5:
                     print(f"⚠️ Incomplete data for entry: {line}")
+                    # Fill missing fields with empty strings
                     fields += [""] * (5 - len(fields))
                     print(f"Fixed fields: {fields}")
 
+                # Assign the fields, using defaults where necessary
                 set_card_code, raw_name, raw_rarity, print_code, quantity = fields[:5]
-                raw_name = clean_wikitext_specials(raw_name)
-                card_name = normalize_card_name(raw_name)
-                print(f"Normalized card name: {card_name}")
 
+                # ✅ Fix here
+                raw_name = clean_wikitext_specials(raw_name)
+
+                # Normalize the card name
+                card_name = normalize_card_name(raw_name)
+                print(f"Normalized card name: {card_name}")  # Debugging print
+
+                # Handle card lookup by name
                 yugioh_card = find_card_by_english_name(
                     card_name, yugioh_cards)
                 if not yugioh_card:
                     print(f"⚠️ Card not found: {card_name}")
                     continue
 
+                # Handle multiple rarities (split by comma)
                 rarities = raw_rarity.split(
                     ',') if raw_rarity else default_rarities
-                rarity_list = [r.strip() for r in rarities if r.strip()]
 
+                rarity_list = [r.strip() for r in rarities] if rarities else []
+
+                # Parse the entry options (e.g., description, other metadata)
                 entry_opts_dict = {}
                 for opt in re.split(r',|\s', entry_opts):
                     if '=' in opt:
                         k, v = opt.split('=', 1)
                         entry_opts_dict[k.strip()] = v.strip()
 
+                # Iterate through the list of rarities and create YugiohSetCard objects
                 for r_code in rarity_list:
                     rarity_obj = find_rarity(r_code, yugioh_rarities)
                     if rarity_obj is None:
@@ -290,8 +311,9 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                         yugioh_set=yugioh_set,
                         yugioh_rarity=rarity_obj,
                         code=set_card_code,
-                        is_alternate_artwork=is_alternate_artwork
+                        is_alternate_artwork=is_alternate_artwork  # Set alternate artwork flag
                     )
+                    # Optionally store quantity or description if needed
                     all_records.append(set_card)
 
     return all_records
@@ -602,8 +624,8 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     # to remove after testing
     # yugioh_sets = [
     #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC"]]
-    yugioh_sets = [
-        ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR", "SOVR", "DUAD"]]
+    # yugioh_sets = [
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR", "SOVR", "DUAD"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
