@@ -53,7 +53,8 @@ def parse_set_list(wikitext_map: dict[str, str]) -> pd.DataFrame:
     all_records = []
 
     for page_title, wikitext in wikitext_map.items():
-        set_blocks = re.findall(r"{{Set list\|(.+?)}}", wikitext, re.DOTALL)
+        set_blocks = re.findall(
+            r"{{Set list\|([\s\S]*?)\n}}", wikitext, re.DOTALL)
 
         for block in set_blocks:
             lines = block.strip().splitlines()
@@ -189,6 +190,10 @@ def find_rarity(code_or_name: str, rarities: List[YugiohRarity]) -> YugiohRarity
     return next((r for r in rarities if r.prefix == code_or_name or r.name == code_or_name), None)
 
 
+def clean_wikitext_specials(text: str) -> str:
+    return text.replace('{{=}}', '=').strip()
+
+
 def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                                       yugioh_cards: List[YugiohCard],
                                       yugioh_sets: List[YugiohSet],
@@ -212,7 +217,9 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
             print(f"⚠️ Set not found: {page_title}")
             continue
 
-        set_blocks = re.findall(r"{{Set list\|(.+?)}}", wikitext, re.DOTALL)
+        set_blocks = re.findall(
+            r"{{Set list\|([\s\S]*?)\n}}", wikitext, re.DOTALL)
+
         for block in set_blocks:
             lines = block.strip().splitlines()
             global_params = {}
@@ -264,6 +271,9 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
 
                 # Assign the fields, using defaults where necessary
                 set_card_code, raw_name, raw_rarity, print_code, quantity = fields[:5]
+
+                # ✅ Fix here
+                raw_name = clean_wikitext_specials(raw_name)
 
                 # Normalize the card name
                 card_name = normalize_card_name(raw_name)
@@ -555,6 +565,44 @@ def consolidate_yugioh_set_cards(yugioh_set_cards_with_images: List[YugiohSetCar
     return yugioh_set_cards_final
 
 
+def consolidate_yugioh_set_cards_v2(yugioh_set_cards_with_images: List[YugiohSetCard],
+                                    yugioh_set_cards_with_codes: List[YugiohSetCard]) -> List[YugiohSetCard]:
+
+    def key(ygo_set_card: YugiohSetCard):
+        return "{region}|{set_name}|{card_english_name}|{rarity_name}".format(
+            region=ygo_set_card.set.region if ygo_set_card.set else "",
+            set_name=ygo_set_card.set.name if ygo_set_card.set else "",
+            card_english_name=ygo_set_card.card.english_name if ygo_set_card.card else "",
+            rarity_name=ygo_set_card.rarity.name if ygo_set_card.rarity else ""
+        )
+
+    # Create dict from code list (only those with non-empty code)
+    ygo_set_card_with_code_dict = {
+        key(ygo): ygo for ygo in yugioh_set_cards_with_codes if ygo.code not in (None, "")
+    }
+
+    # Update images with code if found
+    updated_images = [
+        (
+            setattr(ygo_image, 'code',
+                    ygo_set_card_with_code_dict[key(ygo_image)].code)
+            or ygo_image
+        ) if key(ygo_image) in ygo_set_card_with_code_dict else ygo_image
+        for ygo_image in yugioh_set_cards_with_images
+    ]
+
+    # Build final dict from updated images
+    ygo_set_card_final_dict = {key(ygo): ygo for ygo in updated_images}
+
+    # Add codes that are not already in final list
+    final_list = updated_images + [
+        ygo_code for ygo_code in yugioh_set_cards_with_codes
+        if key(ygo_code) not in ygo_set_card_final_dict
+    ]
+
+    return final_list
+
+
 def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     yugioh_set_cards_v2: List[YugiohSetCard] = []
     yugioh_set_cards_v2_step2: List[YugiohSetCard] = []
@@ -577,7 +625,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     # yugioh_sets = [
     #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC"]]
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR", "SOVR"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR", "SOVR", "DUAD"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 
@@ -637,7 +685,7 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
     yugioh_set_card_image_file_and_image_url_with_missing_links_overall_list: list[dict] = [
     ]
 
-    yugioh_set_cards_v2_overall = consolidate_yugioh_set_cards(
+    yugioh_set_cards_v2_overall = consolidate_yugioh_set_cards_v2(
         yugioh_set_cards_with_images=yugioh_set_cards_v2,
         yugioh_set_cards_with_codes=yugioh_set_cards_v2_from_set_card_lists
     )

@@ -26,7 +26,7 @@ BIGWEB_DEFAULT_HEADER = {
 
 HEADERS: dict[str, str] = {
     'authority': 'yugipedia.com',
-    'User-Agent': 'CardBot/1.0 - (https://civiltekk.com;darellchua2@gmail.com)',
+    'User-Agent': 'CardBot/1.1 - (https://civiltekk.com;darellchua2@gmail.com)',
     'From': 'darellchua3@gmail.com'  # This is another valid field
 }
 
