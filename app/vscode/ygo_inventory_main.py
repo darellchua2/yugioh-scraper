@@ -9,7 +9,8 @@ if __name__ == "__main__":
         if action == "export_v2":
             export_inventory_excel_v2(True, True)
         if action == "upload":
-            upload_inventory_main()
+            upload_inventory_main(
+                is_to_save_to_mysql=True, is_to_save_to_s3=True)
         if action == "scrape_yugipedia":
             yugipedia_main()
         if action == "scrape_yugipedia_set_cards":
