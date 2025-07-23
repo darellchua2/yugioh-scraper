@@ -296,6 +296,14 @@ def export_inventory_excel_v2(is_check_existing_names: bool = True, is_to_save_t
 
         df_combined = pd.concat(
             [df_website, df_asian_english], ignore_index=True)
+
+        # Drop duplicates based on specified columns, keeping the last occurrence
+        df_combined = df_combined.drop_duplicates(
+            subset=["region", "set_card_name_combined", "set_name",
+                    "set_card_code_updated", "rarity_name"],
+            keep='last'
+        )
+
         df_overall = create_overall_card_code_list()
 
         if ygo_inventory_export_path:

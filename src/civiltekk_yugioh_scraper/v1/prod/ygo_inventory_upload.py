@@ -14,6 +14,14 @@ def upload_inventory_csv(filepath: str,
     save_df_to_s3(df, s3_bucket_name, dir, filename_to_upload)
 
 
+def deduplicate_inventory_df(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop_duplicates(
+        subset=["region", "set_card_name_combined", "set_name",
+                "set_card_code_updated", "rarity_name"],
+        keep='last'
+    )
+
+
 def upload_inventory_main(filename="YGOInventoryV2.xlsx",
                           filename_to_upload="YGOInventoryV2.csv",
                           s3_bucket_name='yugioh-storage',
@@ -23,16 +31,13 @@ def upload_inventory_main(filename="YGOInventoryV2.xlsx",
     filepath = get_file_path(filename)
     if filepath:
         df = pd.read_excel(filepath)
-        # filtered_df = df[
-        #     df['post_title'].isna() |
-        #     (df['post_title'] == '')
-        #     # df['post_title'].str.endswith(" | Japanese", na=False)
-        # ]
+
+        # Deduplicate based on key inventory fields, keeping the last occurrence
+        df = deduplicate_inventory_df(df)
 
         save_df_to_s3(df, s3_bucket_name, dir, filename_to_upload)
-        save_df_to_mysql(df, table_name=ygo_inventory_data_table,
-                         if_exists="replace")
-        # df.to_csv("sample.csv", index=False)
+        save_df_to_mysql(
+            df, table_name=ygo_inventory_data_table, if_exists="replace")
 
 
 if __name__ == "__main__":
