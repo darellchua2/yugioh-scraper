@@ -1,6 +1,6 @@
 [project]
 name = "civiltekk-yugioh-scraper"
-version = "0.7.1"
+version = "0.7.2"
 description = "A library to scrape Yu-Gi-Oh! inventory"
 authors = [
     {name = "darellchua",email = "darellchua2@gmail.com"}
