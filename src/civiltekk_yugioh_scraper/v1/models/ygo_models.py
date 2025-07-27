@@ -1,3 +1,4 @@
+import logging
 from typing import TypedDict, List
 
 cols = ["region", "set_card_name_combined", "set_name", "set_card_code_updated",

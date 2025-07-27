@@ -7,6 +7,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import concurrent
+import logging
 
 from ..utilities.misc_utilities import check_for_jap_chars, run_request_until_response
 from ..utilities.aws_utilities import upload_data
@@ -146,14 +147,14 @@ def get_bigweb_objs2(page_number):
 
             final_obj["bigweb_set_cards"] = bigweb_set_cards
         else:
-            print("Response is None")
+            logging.info("Response is None")
             return final_obj
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         if exc_tb is not None:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print("Page {page_number}:".format(page_number=page_number),
-                  exc_type, fname, exc_tb.tb_lineno)
+            logging.error("Page {page_number}:".format(page_number=page_number),
+                          exc_type, fname, exc_tb.tb_lineno)
 
     return final_obj
 
@@ -166,9 +167,7 @@ def bigweb_scrape():
     response = requests.get(URL, timeout=10)
     response_dict = response.json()
     total_page_to_iterate = response_dict['pagenate']['pageCount']
-    print("total page count: {total_page_to_iterate}".format(
-        total_page_to_iterate=total_page_to_iterate))
-
+    logging.info(f"Total page count: {total_page_to_iterate}")
     final_bigweb_sets: list[BigwebSet] = []
     final_bigweb_set_cards: list[BigwebSetCard] = []
     final_bigweb_rarities: list[BigwebRarity] = []
@@ -186,7 +185,8 @@ def bigweb_scrape():
                 final_bigweb_set_cards.extend(bigweb_set_cards)
 
             except AttributeError as e:
-                print(type(e), e.args)
+                logging.error(
+                    f"Error in processing future result: {e}. Skipping this page.")
 
     date_updated = datetime.datetime.now()
 
@@ -252,10 +252,10 @@ def bigweb_scrape():
                 table_name="bigweb", if_exist="append", db_name="yugioh_data")
     end = datetime.datetime.now()
     difference = end - start
-    print(f"The time difference between the 2 time is: {difference}")
+    logging.info(f"The time difference between the 2 time is: {difference}")
 
 
-def replace_duel_terminal_rarity(x):
+def replace_duel_terminal_rarity(x: str) -> str:
     mapping_dict = {
         "Rare": "Duel Terminal Rare Parallel Rare",
         "Common": "Duel Terminal Normal Parallel Rare",

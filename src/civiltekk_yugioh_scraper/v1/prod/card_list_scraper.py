@@ -4,6 +4,7 @@ from ..utilities.yugipedia.yugipedia_scraper_set_card import get_yugioh_set_card
 from ..utilities.aws_utilities import upload_data
 from ..config import TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS
 from dotenv import load_dotenv
+import logging
 
 
 def card_list_scraper(to_csv: bool = True, to_sql: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -27,7 +28,7 @@ def card_list_scraper(to_csv: bool = True, to_sql: bool = True) -> tuple[pd.Data
 
     end = datetime.datetime.now()
     difference = end - start
-    print(f"The time difference between the 2 time is: {difference}")
+    logging.info(f"The time difference between the 2 time is: {difference}")
     return df, df_missing_links
 
 

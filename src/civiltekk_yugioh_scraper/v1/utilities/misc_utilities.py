@@ -36,7 +36,7 @@ def list_files(directory: str) -> None:
     try:
         for filename in os.listdir(directory):
             if os.path.isfile(os.path.join(directory, filename)):
-                print(filename)
+                logging.info(filename)
     except Exception as e:
         logging.error(f"Error listing files in directory {directory}: {e}")
 
@@ -77,22 +77,20 @@ def run_request_until_response(url: str, params: dict, max_counter: int = 5) -> 
         time.sleep(1)
         try:
             response = requests.get(url, timeout=10)
-            print(url)
         except requests.exceptions.ReadTimeout as e:
             error_string = ""
             for key, value in params.items():
                 error_string = error_string + \
                     "{key}:{value}".format(key=key, value=value) + "\n"
-            # logging.exception("{error_string}".format(
+            # logging.error("{error_string}".format(
             #     error_string=error_string))
-            print(
+            logging.error(
                 "ReadTimeoutError: {url} - Counter {counter}".format(url=url, counter=counter))
         finally:
             counter += 1
 
     if counter == max_counter:
-        print("Exceeded trying {max_counter} times for {url}".format(
-            url=url, max_counter=max_counter))
+        logging.warning(f"Exceeded trying {max_counter} times for {url}")
 
     return response
 
@@ -109,11 +107,11 @@ def run_yugipedia_request_until_response(url: str, params: Mapping[str, str | in
                 url, params=params, timeout=50, headers=headers)
             return response
         except requests.exceptions.ReadTimeout:
-            print(f"ReadTimeoutError: {url} - Counter {counter}")
+            logging.info(f"ReadTimeoutError: {url} - Counter {counter}")
         finally:
             counter += 1
 
-    print(f"Exceeded trying {max_counter} times for {url}")
+    logging.info(f"Exceeded trying {max_counter} times for {url}")
 
     # Create a dummy response with an error status
     fake_response = requests.Response()
@@ -142,19 +140,18 @@ def run_wiki_request_until_response(url: str, header: dict, params: dict, max_co
         time.sleep(1.0)
         try:
             logging.info(f"Running URL: {url}")
-            print(url, params)
             response = requests.get(
                 url, headers=header, params=params, timeout=50)
             if response.status_code == 200:
                 response_json = response.json()
                 break
         except requests.exceptions.ReadTimeout:
-            logging.exception(
+            logging.error(
                 f"{READ_TIMEOUT_ERROR} for {url} - Counter {counter}")
         except requests.exceptions.JSONDecodeError:
-            logging.exception(f"{JSON_ERROR} for {url} - Counter {counter}")
+            logging.error(f"{JSON_ERROR} for {url} - Counter {counter}")
         except Exception as e:
-            logging.exception(f"Error in request: {e}")
+            logging.error(f"Error in request: {e}")
         finally:
             counter += 1
 

@@ -20,9 +20,9 @@ def save_df_to_mysql(df: pd.DataFrame, table_name: str, if_exists="replace") -> 
     try:
         df.to_sql(table_name, con=engine, index=False,
                   if_exists=if_exists, method='multi')  # type: ignore
-        print(f"✅ Successfully uploaded to MySQL table: {table_name}")
+        logging.info(f"✅ Successfully uploaded to MySQL table: {table_name}")
     except Exception as e:
-        print(f"❌ Error uploading to MySQL: {e}")
+        logging.info(f"❌ Error uploading to MySQL: {e}")
 
 
 def save_df_to_s3(df: pd.DataFrame, bucket_name: str, dir: str, filename_for_backup: str) -> None:
@@ -95,7 +95,7 @@ def upload_data(df: pd.DataFrame, table_name: str, if_exist: Literal['fail', 're
     try:
         engine = create_engine(
             f"mysql+pymysql://{NAME}:{PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}")
-        print("engine", engine)
+        logging.info(f"Connected to the database: {db_name}")
         df.to_sql(con=engine, name=table_name, if_exists=if_exist, index=False)
         logger.info(
             f"DataFrame successfully uploaded to {db_name}.{table_name}")

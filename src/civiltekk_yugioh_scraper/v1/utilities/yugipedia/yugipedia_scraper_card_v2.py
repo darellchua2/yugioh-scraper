@@ -10,6 +10,7 @@ import string
 import csv
 import requests
 from typing import Optional, Dict, Any
+import logging
 
 
 def fetch_card_data_v2(character: str, offset: int = 0, limit: int = 500) -> Optional[Dict[str, Any]]:
@@ -30,11 +31,13 @@ def fetch_card_data_v2(character: str, offset: int = 0, limit: int = 500) -> Opt
         try:
             return response.json()
         except ValueError as ve:
-            print(f"Invalid JSON response for character '{character}': {ve}")
+            logging.error(
+                f"Invalid JSON response for character '{character}': {ve}")
             return None
 
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching data for '{character}': {e}")
+        logging.error(
+            f"An error occurred while fetching data for '{character}': {e}")
         return None
 
 
@@ -46,17 +49,17 @@ def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[Yug
     offset = 0
 
     while True:
-        print(f"Fetching data with offset {offset}...")
+        logging.info(f"Fetching data with offset {offset}...")
         # time.sleep(0.5)
         data = fetch_card_data_v2(character, offset, limit)
 
         if data is None or "results" not in data:
-            print("No more data found or an error occurred.")
+            logging.info("No more data found or an error occurred.")
             break
 
         results: dict[str, dict] = data.get("results", {})
         if not results:
-            print("No additional results found.")
+            logging.info("No additional results found.")
             break
 
         # Convert results into YugiohCard instances and add to the list
@@ -67,7 +70,7 @@ def get_yugioh_cards_per_character(character: str, limit: int = 500) -> List[Yug
 
         # Check if we have fetched all entries
         if len(results) < limit:
-            print("All entries fetched.")
+            logging.info("All entries fetched.")
             break
 
         # Increment offset for next iteration
@@ -111,13 +114,14 @@ def fetch_and_save_cards(search_character: str, output_file: str) -> None:
         all_cards = get_yugioh_cards_per_character(search_character)
 
         if all_cards:
-            print(
+            logging.info(
                 f"Total cards found for '{search_character}': {len(all_cards)}")
             save_cards_to_csv(all_cards, output_file)
         else:
-            print(f"No cards found for '{search_character}'.")
+            logging.info(f"No cards found for '{search_character}'.")
     except Exception as e:
-        print(f"An unexpected error occurred for '{search_character}': {e}")
+        logging.error(
+            f"An unexpected error occurred for '{search_character}': {e}")
 
 
 def get_card_data(character: str, offset: int = 0, limit: int = 500) -> Optional[Dict[str, Any]]:
@@ -138,11 +142,13 @@ def get_card_data(character: str, offset: int = 0, limit: int = 500) -> Optional
         try:
             return response.json()
         except ValueError as ve:
-            print(f"Invalid JSON response for character '{character}': {ve}")
+            logging.error(
+                f"Invalid JSON response for character '{character}': {ve}")
             return None
 
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching data for '{character}': {e}")
+        logging.error(
+            f"An error occurred while fetching data for '{character}': {e}")
         return None
 
 
@@ -160,12 +166,12 @@ def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, l
             character, offset, limit)
 
         if data is None or "results" not in data:
-            print("No more data found or an error occurred.")
+            logging.info("No more data found or an error occurred.")
             break
 
         results: dict[str, dict] = data.get("results", {})
         if not results:
-            print("No additional results found.")
+            logging.info("No additional results found.")
             break
 
         # Convert results into YugiohCard instances and add to the list
@@ -176,7 +182,7 @@ def get_yugioh_cards_per_semantic_card_search_per_character_v2(character: str, l
 
         # Check if we have fetched all entries
         if len(results) < limit:
-            print("All entries fetched.")
+            logging.info("All entries fetched.")
             break
 
         # Increment offset for next iteration
@@ -203,7 +209,7 @@ def get_yugioh_cards() -> list[YugiohCard]:
                 yugioh_cards.extend(future.result().copy())
             except requests.exceptions.JSONDecodeError as e:
                 pass
-        print("Total semantic cards:{overall_list_count}".format(
+        logging.info("Total semantic cards:{overall_list_count}".format(
             overall_list_count=len(yugioh_cards)))
 
     return yugioh_cards
@@ -227,7 +233,7 @@ def main() -> None:
             fetch_and_save_cards, char, output_file) for char in search_characters]
         concurrent.futures.wait(futures)
 
-    print("\nAll tasks completed.")
+    logging.info("\nAll tasks completed.")
 
 
 if __name__ == "__main__":

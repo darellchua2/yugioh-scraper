@@ -1,4 +1,5 @@
 import csv
+import logging
 import requests
 from typing import List, Dict
 from ...config import HEADERS, MEDIAWIKI_URL
@@ -46,10 +47,11 @@ def get_category_members(category_name: str, limit: int = 500) -> List[Dict[str,
         if "query" in data and "categorymembers" in data["query"]:
             return [{"title": member["title"], "pageid": member["pageid"]} for member in data["query"]["categorymembers"]]
         else:
-            print(f"No members found for category: {category_name}")
+            logging.info(f"No members found for category: {category_name}")
             return []
     else:
-        print(f"Failed to fetch category members: {response.status_code}")
+        logging.info(
+            f"Failed to fetch category members: {response.status_code}")
         return []
 
 

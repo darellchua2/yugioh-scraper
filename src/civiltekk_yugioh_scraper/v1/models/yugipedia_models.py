@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, List, Optional
 import re
 import ast
+import html
 
 
 def format_lore(value: Optional[str]) -> str:
@@ -100,8 +101,8 @@ class YugiohCard:
 
     def __init__(self, name: str, attributes: Dict[str, Any]) -> None:
         self.name: str = name or ""
-        self.english_name: str = self.get_first(
-            attributes.get("English name", attributes.get("english_name", name)))
+        self.english_name: str = html.unescape(self.get_first(
+            attributes.get("English name", attributes.get("english_name", name))))
         self.password: str | None = self.get_first(
             attributes.get("Password", attributes.get("password", None)))
         self.card_type: str = self.extract_fulltext_single(
@@ -280,7 +281,8 @@ class YugiohSetCard:
                  code: str | None = None,
                  image_url: str | None = None,
                  image_file: str | None = None,
-                 is_alternate_artwork: bool = False
+                 is_alternate_artwork: bool = False,
+                 alternate_artwork_type: str | None = None
                  ):
         if isinstance(yugioh_set, YugiohSet):
             self.set = yugioh_set
@@ -298,6 +300,7 @@ class YugiohSetCard:
         self.image_url: str | None = image_url
         self.image_file: str | None = image_file
         self.is_alternate_artwork: bool = is_alternate_artwork
+        self.alternate_artwork_type: str | None = alternate_artwork_type
 
     def get_dict(self) -> dict:
         return self.__dict__
@@ -366,6 +369,7 @@ class YugiohSetCard:
                 "image_url": self.image_url,
                 "image_file": self.image_file,
                 "is_alternate_artwork": self.is_alternate_artwork,
+                "alternate_artwork_type": self.alternate_artwork_type if self.is_alternate_artwork else None,
                 "lore": self.card.lore,
                 "pendulum_effect": self.card.pendulum_effect,
                 "archetypes": self.card.archetypes,
