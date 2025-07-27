@@ -3,6 +3,7 @@ import json
 import requests
 import csv
 import re
+import logging
 
 from ..utilities.aws_utilities import save_to_s3
 from ..config import DEFAULT_CARD_QUANTITY_INTERVAL, BUCKET_NAME
@@ -108,7 +109,7 @@ def tcgcorner_scrape_per_page(page_number=1) -> tuple[list[dict], int]:
             obj['region'] = check_region(set_card_code_updated=card_code)
             tcg_array.append(obj.copy())
         else:
-            print(f"Title format mismatch: {title}")
+            logging.info(f"Title format mismatch: {title}")
 
     return tcg_array, last_page
 
@@ -129,7 +130,7 @@ def dict_to_json(filename: str, data_array: list[dict], method="LOCAL"):
         # Save the JSON data to a file in S3
         save_to_s3(BUCKET_NAME, filename, json_buffer, file_type="json")
 
-        print("JSON file has been created.")
+        logging.info("JSON file has been created.")
 
 
 def dict_to_csv(filename: str, data_array: list[dict], method="LOCAL"):
@@ -150,7 +151,7 @@ def dict_to_csv(filename: str, data_array: list[dict], method="LOCAL"):
             for row in data_array:
                 writer.writerow(row)
 
-            print("CSV file has been created.")
+            logging.info("CSV file has been created.")
     if method == "S3":
         # Create an in-memory string buffer
         csv_buffer = StringIO()

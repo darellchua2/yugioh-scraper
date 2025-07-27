@@ -6,7 +6,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import csv
-from typing import Tuple, cast, List, Dict
+from typing import cast, List, Dict
 
 from ..models.ygo_models import TekkxProductData
 from .tcgcorner_scraper import get_card_prices
@@ -210,57 +210,6 @@ def check_for_redirect(list_of_card_names: list[str]) -> dict:
         return redirect_dict
 
 
-def export_inventory_excel(is_check_existing_names: bool = True, is_to_save_to_mysql: bool = False) -> None:
-    """
-    Combines website and database inventory data, handles card name redirections, and exports to Excel.
-    """
-    try:
-        ygo_inventory_export_path = get_file_path("YGOInventoryV2.xlsx")
-        ygo_overall_card_list_export_path = get_file_path(
-            "OverallCardCodeList-2.xlsx")
-
-        try:
-            _, engine = get_engine_for_tekkx_scalable_db(db_name="yugioh_data")
-            df_asian_english = pd.read_sql(
-                "SELECT * FROM ygo_inventory_data WHERE region = 'Asian-English'", engine)
-        except Exception as e:
-            logging.warning(f"No Asian-English records found: {e}")
-            df_asian_english = pd.DataFrame()
-
-        df_website = pd.DataFrame(retrieve_website_data_to_list_of_dict())
-        card_name_list = df_website["set_card_name_combined"].tolist()
-        if is_check_existing_names:
-            dict_to_map = check_existing_card_names_to_update(card_name_list)
-
-            if dict_to_map:
-                df_website = pd.merge(
-                    df_website,
-                    pd.DataFrame([{"name": k, "new name": v}
-                                  for k, v in dict_to_map.items()]),
-                    how="left",
-                    left_on="set_card_name_combined",
-                    right_on="name"
-                ).drop(columns=['name'])
-
-        df_combined = pd.concat(
-            [df_website, df_asian_english], ignore_index=True)
-        df_overall = create_overall_card_code_list()
-
-        if ygo_inventory_export_path:
-            with pd.ExcelWriter(ygo_inventory_export_path, engine='xlsxwriter') as writer:
-                df_combined.to_excel(writer, sheet_name="V2", index=False)
-        if ygo_overall_card_list_export_path:
-            with pd.ExcelWriter(ygo_overall_card_list_export_path, engine='xlsxwriter') as writer:
-                df_overall.to_excel(writer, sheet_name="Sheet1", index=False)
-
-        if is_to_save_to_mysql:
-            save_df_to_mysql(
-                df_combined, table_name="ygo_inventory_data", if_exists="replace")
-
-    except Exception as e:
-        logging.error(f"Error exporting inventory to Excel: {e}")
-
-
 def export_inventory_excel_v2(is_check_existing_names: bool = True, is_to_save_to_mysql: bool = False):
     """
     Combines website and database inventory data, handles card name redirections, and exports to Excel.
@@ -377,6 +326,6 @@ def combine_ae_price(filename: str = "YGOInventoryV2-AE.xlsx",
 if __name__ == "__main__":
     try:
         combine_ae_price()
-        export_inventory_excel()
+        export_inventory_excel_v2()
     except Exception as e:
         logging.error(f"Error in main execution: {e}")

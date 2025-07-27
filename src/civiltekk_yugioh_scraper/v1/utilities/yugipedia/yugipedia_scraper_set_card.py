@@ -6,6 +6,7 @@ import time
 from typing import List, Mapping
 import pandas as pd
 import unicodedata
+import html
 
 from ..aws_utilities import retrieve_data_from_db_to_df
 
@@ -245,6 +246,11 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 print(f"⚠️ No global rarity found in header for {page_title}")
 
             for line in entry_lines:
+                # Check for alternate artwork in the description (after //)
+                alternate_artwork_type = None
+                is_alternate_artwork = False
+                set_card_code = None
+
                 if not line.strip():
                     continue
 
@@ -253,14 +259,17 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                 entry_opts = parts_main[1].strip() if len(
                     parts_main) > 1 else ""
 
-                # Check for alternate artwork in the description (after //)
-                is_alternate_artwork = any(
-                    marker in entry_opts.lower()
-                    for marker in ("alternate artwork", "international artwork", "new artwork", "9th artwork", "8th artwork", "7th artwork")
-                )
+                # Extract the artwork description if present
+                artwork_match = re.search(
+                    r'description::\(?([^\)]+? artwork)\)?', entry_opts, re.IGNORECASE)
+                if artwork_match:
+                    alternate_artwork_type = artwork_match.group(1).strip()
+                    is_alternate_artwork = True
+                    print(
+                        f"🎨 Found alternate artwork type: {alternate_artwork_type}")
 
                 # Split entry data into fields (card code, name, rarity, print code, quantity)
-                fields = [p.strip() for p in entry_data.split(';')]
+                fields = [str(p.strip()) for p in entry_data.split(';')]
 
                 # If there are fewer than 5 fields, fill the missing ones with defaults
                 if len(fields) < 5:
@@ -271,17 +280,31 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
 
                 # Assign the fields, using defaults where necessary
                 set_card_code, raw_name, raw_rarity, print_code, quantity = fields[:5]
-
+                # if set_card_code == "DBCB-JP017":
+                #     print(f"⚠️ DBCB-JP017: {line}")
                 # ✅ Fix here
                 raw_name = clean_wikitext_specials(raw_name)
 
+                # Decode HTML entities in the name
+                decoded_name = html.unescape(raw_name)
+
                 # Normalize the card name
-                card_name = normalize_card_name(raw_name)
+                card_name = normalize_card_name(decoded_name)
                 print(f"Normalized card name: {card_name}")  # Debugging print
 
-                # Handle card lookup by name
-                yugioh_card = find_card_by_english_name(
-                    card_name, yugioh_cards)
+                if "force-SMW" in entry_opts:
+                    # Force exact match on english_name
+                    yugioh_card = next(
+                        (c for c in yugioh_cards if c.name == card_name), None)
+                    if set_card_code == "DBCB-JP017":
+                        print(f"⚠️ DBCB-JP017: {line}")
+                    print(
+                        f"🔁 force-SMW: Trying exact match for '{card_name}'")
+                else:
+                    # Handle card lookup by name
+                    yugioh_card = find_card_by_english_name(
+                        card_name, yugioh_cards)
+
                 if not yugioh_card:
                     print(f"⚠️ Card not found: {card_name}")
                     continue
@@ -311,7 +334,8 @@ def parse_set_lists_from_wikitext_map(wikitext_map: dict[str, str],
                         yugioh_set=yugioh_set,
                         yugioh_rarity=rarity_obj,
                         code=set_card_code,
-                        is_alternate_artwork=is_alternate_artwork  # Set alternate artwork flag
+                        is_alternate_artwork=is_alternate_artwork,  # Set alternate artwork flag
+                        alternate_artwork_type=alternate_artwork_type
                     )
                     # Optionally store quantity or description if needed
                     all_records.append(set_card)
@@ -623,9 +647,9 @@ def get_yugioh_set_cards_v2() -> tuple[list[YugiohSetCard], list[dict]]:
 
     # to remove after testing
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["QCAC", "SD5", "ADDR", "AGOV", "BC", "DUAD"]]
     # yugioh_sets = [
-    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["ADDR", "SOVR", "DUAD"]]
+    #     ygo_set for ygo_set in yugioh_sets if ygo_set.set_code in ["DBCB", "QCAC"]]
 
     yugioh_set_split_list = list(split(yugioh_sets, 1))
 

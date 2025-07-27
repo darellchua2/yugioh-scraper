@@ -2,7 +2,6 @@ import concurrent
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-from typing import Any
 import requests
 import bs4 as bs
 from bs4 import BeautifulSoup, Tag
@@ -10,6 +9,7 @@ import pandas as pd
 import datetime
 from dotenv import load_dotenv
 import re
+import logging
 
 from ..utilities.aws_utilities import upload_data
 
@@ -88,7 +88,7 @@ def get_card_set_codes_from_card_set(obj: dict) -> list[dict]:
     list_needed: list = []
     try:
         url: str = obj['url']
-        print('url:', url)
+        logging.info('url: %s', url)
         set_code = obj['set_code']
         response = requests.get(url, timeout=10)
         response.encoding = 'utf-8'
@@ -139,9 +139,9 @@ def get_card_set_codes_from_card_set(obj: dict) -> list[dict]:
                     list_needed.append(card_obj.copy())
 
     except requests.ConnectionError as e:
-        print(e)
+        logging.error(f"ConnectionError: {e}")
     except Exception as e:
-        print(e.args)
+        logging.error(f"Exception: {e}")
     return list_needed
 
 
@@ -186,13 +186,13 @@ def get_set_list_v2(url: str) -> list[dict]:
         response.encoding = 'utf-8'
         source = response.text
     except requests.RequestException as e:
-        print(f"Error fetching URL: {e}")
+        logging.info(f"Error fetching URL: {e}")
         return []
 
     soup = BeautifulSoup(source, 'html.parser')
     div: Tag | None = soup.find('div', id='side-sell-single')
     if not div or not isinstance(div, Tag):
-        print("Target div not found or is not a valid Tag")
+        logging.warning("Target div not found or is not a valid Tag")
         return []
 
     inputs = div.find_all(
@@ -258,68 +258,11 @@ def replace_dt_rarity_name(input_df: pd.DataFrame):
     return input_df
 
 
-def yuyutei_scrape_old(dev_type=None):
-    load_dotenv()
-    start = datetime.datetime.now()
-
-    print(start.strftime("%Y-%m-%d %H:%M:%S"))
-
-    url2 = "https://yuyu-tei.jp/sell/ygo/s/search"
-
-    card_set_obj_list: list[dict] = get_set_list_v2(url2)
-    final_list: list[dict] = []
-
-    # card_set_obj_list = [card_set_obj_list[0]]  # used t
-    card_set_obj_list = [
-        {'url': 'https://yuyu-tei.jp/sell/ygo/s/qccu', 'set_code': 'QCCU'}]  # used t
-
-    with ThreadPoolExecutor(4) as executor:
-        futures: list = []
-
-        for obj in card_set_obj_list:
-            futures.append(executor.submit(
-                get_card_set_codes_from_card_set, obj))
-
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future_list = future.result()
-                final_list.extend(future_list)
-            except Exception as e:
-                print(e)
-                continue
-
-    df = pd.DataFrame(final_list)
-    print(df.columns)
-    print("shape", df.shape)
-    rarity_dict = get_rarity_mapping_dict()
-    df["mapped_rarity"] = df["card_rarity"].map(rarity_dict)
-    df['date'] = datetime.datetime.now()
-
-    # drop card_carity column
-    df = df.drop(columns=['card_rarity'])
-
-    df = df.dropna(subset=['mapped_rarity', 'card_set_card_code'])
-    df = replace_dt_rarity_name(df)
-
-    buffer = BytesIO()
-    df.to_csv(buffer, index=False)
-
-    df = df[['Price', 'card_set_card_code', 'mapped_rarity', 'date']]
-    upload_data(df, 'yuyutei', 'append', 'yugioh_data')
-    upload_data(df, 'yuyutei_latest', 'replace', 'yugioh_data')
-
-    end = datetime.datetime.now()
-    print(start.strftime("%Y-%m-%d %H:%M:%S"))
-    print(end.strftime("%Y-%m-%d %H:%M:%S"))
-    difference = end - start
-    print(f"The time difference between the 2 time is: {difference}")
-
-
 def yuyutei_scrape(dev_type=None):
     load_dotenv()
     start = datetime.datetime.now()
 
-    print(start.strftime("%Y-%m-%d %H:%M:%S"))
+    logging.info(start.strftime("%Y-%m-%d %H:%M:%S"))
 
     url2 = "https://yuyu-tei.jp/sell/ygo/s/search"
 
@@ -341,17 +284,17 @@ def yuyutei_scrape(dev_type=None):
                 future_list = future.result()
                 final_list.extend(future_list)
             except Exception as e:
-                print(e)
+                logging.error(e)
                 continue
 
     # Check if final_list is empty
     if not final_list:
-        print("No data found. Exiting the function.")
+        logging.warning("No data found. Exiting the function.")
         return  # Exit the function early
 
     df = pd.DataFrame(final_list)
-    print(df.columns)
-    print("shape", df.shape)
+    logging.info(f"DataFrame shape: {df.shape}")
+    logging.info(f"DataFrame columns: {df.columns}")
 
     rarity_dict = get_rarity_mapping_dict()
     df["mapped_rarity"] = df["card_rarity"].map(rarity_dict)
@@ -373,10 +316,10 @@ def yuyutei_scrape(dev_type=None):
     upload_data(df, 'yuyutei_latest', 'replace', 'yugioh_data')
 
     end = datetime.datetime.now()
-    print(start.strftime("%Y-%m-%d %H:%M:%S"))
-    print(end.strftime("%Y-%m-%d %H:%M:%S"))
+    logging.info(f"Start time: {start.strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info(f"End time: {end.strftime('%Y-%m-%d %H:%M:%S')}")
     difference = end - start
-    print(f"The time difference between the 2 times is: {difference}")
+    logging.info(f"The time difference between the 2 times is: {difference}")
 
 
 if __name__ == "__main__":

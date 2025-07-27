@@ -14,4 +14,4 @@ if __name__ == "__main__":
         if action == "scrape_yugipedia":
             yugipedia_main()
         if action == "scrape_yugipedia_set_cards":
-            card_list_scraper(True, True)
+            card_list_scraper(to_csv=True, to_sql=True)

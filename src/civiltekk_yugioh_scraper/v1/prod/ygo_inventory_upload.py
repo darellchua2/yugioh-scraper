@@ -1,17 +1,7 @@
+import logging
 import pandas as pd
 from ..utilities.aws_utilities import save_df_to_s3, save_df_to_mysql
 from ..utilities.misc_utilities import get_file_path
-
-
-def upload_inventory_csv(filepath: str,
-                         filename_to_upload: str,
-                         s3_bucket_name: str,
-                         dir="") -> None:
-    # Open a file in binary mode ('rb') and read its contents into a BytesIO object
-    df = pd.read_csv(filepath)
-    print(df)
-
-    save_df_to_s3(df, s3_bucket_name, dir, filename_to_upload)
 
 
 def deduplicate_inventory_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -33,7 +23,7 @@ def upload_inventory_main(filename="YGOInventoryV2.xlsx",
     filepath = get_file_path(filename)
     ygo_inventory_export_path = get_file_path("YGOInventoryV2.xlsx")
     if not filepath:
-        print(f"File {filename} not found.")
+        logging.info(f"File {filename} not found.")
         return
 
     if filepath:
@@ -45,14 +35,14 @@ def upload_inventory_main(filename="YGOInventoryV2.xlsx",
             df.to_excel(writer, sheet_name="V2", index=False)
         if is_to_save_to_s3:
             save_df_to_s3(df, s3_bucket_name, dir, filename_to_upload)
-            print(
+            logging.info(
                 f"Uploading to S3 bucket: {s3_bucket_name}, directory: {dir}, filename: {filename_to_upload}")
         if is_to_save_to_mysql:
             save_df_to_mysql(
                 df, table_name=ygo_inventory_data_table, if_exists="replace")
-            print(f"Uploading to MySQL table: {ygo_inventory_data_table}")
+
             # Save the DataFrame to MySQL
-            print(
+            logging.info(
                 f"Saving DataFrame to MySQL table: {ygo_inventory_data_table}")
 
 

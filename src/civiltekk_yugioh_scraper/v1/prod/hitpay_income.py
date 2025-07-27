@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 import numpy as np
 
@@ -35,10 +37,8 @@ def hitpay_main():
                            'Hitpay Fee', 'Stripe Net',
                            'Ref No', 'Payer', 'Status', 'picture', 'Account'
                            ]]
-    print(df_unique.dtypes)
+    logging.info(f"Total unique orders: {len(df_unique)}")
     df_unique.to_csv(orders_export_path, index=False)
-
-    print(df)
 
 
 if __name__ == "__main__":
