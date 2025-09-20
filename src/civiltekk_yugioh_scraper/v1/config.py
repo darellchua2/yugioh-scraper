@@ -36,8 +36,8 @@ TABLE_YUGIOH_RARITIES = 'yugioh_rarities3'
 TABLE_YUGIOH_OVERALL_CARD_CODE_LISTS = 'overall_card_code_list2'
 
 RDS_HOST = os.getenv('RDS_HOST')
-NAME = os.getenv('USER')
-PASSWORD = os.getenv('PASSWORD')
+NAME = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
 TEKKX_SCALABLE_DB_NAME = os.getenv('DB_NAME', "tekkx_scalable")
 YUGIOH_DB = os.getenv("YUGIOH_DB", "yugioh_data")
 DB_PORT = os.getenv("DB_PORT", "3307")

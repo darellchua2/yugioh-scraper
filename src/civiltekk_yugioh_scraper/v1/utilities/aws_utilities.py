@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 import logging
 import pandas as pd
 import pymysql
-from ..config import RDS_HOST, NAME, PASSWORD, TEKKX_SCALABLE_DB_NAME, DB_PORT
+from ..config import RDS_HOST, NAME, DB_PASSWORD, TEKKX_SCALABLE_DB_NAME, DB_PORT
 
 
 # Setup logging
@@ -94,7 +94,7 @@ def upload_data(df: pd.DataFrame, table_name: str, if_exist: Literal['fail', 're
     """
     try:
         engine = create_engine(
-            f"mysql+pymysql://{NAME}:{PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}")
+            f"mysql+pymysql://{NAME}:{DB_PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}")
         logging.info(f"Connected to the database: {db_name}")
         df.to_sql(con=engine, name=table_name, if_exists=if_exist, index=False)
         logger.info(
@@ -119,7 +119,7 @@ def upload_data_v2(df: pd.DataFrame, table_name: str, if_exist: Literal['fail', 
     """
     try:
         engine = create_engine(
-            f"mysql+pymysql://{NAME}:{PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}")
+            f"mysql+pymysql://{NAME}:{DB_PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}")
         df.to_sql(con=engine, name=table_name, if_exists=if_exist, index=False)
         logger.info(
             f"DataFrame successfully uploaded to {db_name}.{table_name}")
@@ -141,7 +141,7 @@ def get_engine_for_tekkx_scalable_db(db_name: str = TEKKX_SCALABLE_DB_NAME):
     Raises:
         Exception: If the connection to the database fails.
     """
-    db_uri = f"mysql+pymysql://{NAME}:{PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}"
+    db_uri = f"mysql+pymysql://{NAME}:{DB_PASSWORD}@{RDS_HOST}:{DB_PORT}/{db_name}"
 
     try:
         engine = create_engine(db_uri, echo=True)
