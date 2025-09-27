@@ -76,6 +76,7 @@ def run_request_until_response(url: str, params: dict, max_counter: int = 5) -> 
     while not response and counter < max_counter:
         time.sleep(1)
         try:
+            logging.info(f"Running URL: {url} - Counter {counter}")
             response = requests.get(url, timeout=10)
         except requests.exceptions.ReadTimeout as e:
             error_string = ""
