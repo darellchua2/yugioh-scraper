@@ -1,5 +1,5 @@
 import sys
-from civiltekk_yugioh_scraper.v1.prod import upload_inventory_main, card_list_scraper, export_inventory_excel_v2
+from civiltekk_yugioh_scraper.v1.prod import upload_inventory_main, card_list_scraper, export_inventory_excel_v2, bigweb_scrape, yuyutei_scrape
 from civiltekk_yugioh_scraper.v1.utilities import yugipedia_main
 
 
@@ -15,3 +15,7 @@ if __name__ == "__main__":
             yugipedia_main()
         if action == "scrape_yugipedia_set_cards":
             card_list_scraper(to_csv=True, to_sql=True)
+        if action == 'scrape_bigweb':
+            bigweb_scrape()
+        if action == 'scrape_yuyutei':
+            yuyutei_scrape()
